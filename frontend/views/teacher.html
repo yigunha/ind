@@ -1,0 +1,22 @@
+<!-- 디렉토리 구조 기준: frontend/views/teacher.html -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>선생님 페이지</title>
+  <style>
+    body { text-align: center; font-family: Arial, sans-serif; padding: 40px; }
+    button { margin: 15px; padding: 10px 20px; font-size: 18px; }
+  </style>
+</head>
+<body>
+  <h1>👨‍🏫 선생님 페이지</h1>
+
+  <button onclick="location.href='/평가1.html'">평가1 실시간 결과 보기</button>
+  <button onclick="location.href='/manage-users.html'">사용자 역할 관리</button>
+
+  <form action="/auth/logout" method="POST">
+    <button type="submit">로그아웃</button>
+  </form>
+</body>
+</html>

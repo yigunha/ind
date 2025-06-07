@@ -1,0 +1,35 @@
+<!-- 디렉토리 구조 기준: frontend/views/student.html -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>학생 페이지</title>
+  <style>
+    button {
+      display: block;
+      margin: 10px auto;
+      padding: 10px 20px;
+      font-size: 18px;
+      width: 200px;
+    }
+  </style>
+</head>
+<body>
+  <h1>👩‍🎓 학생 페이지</h1>
+
+  <button onclick="location.href='/game1.html'">1번 게임</button>
+  <button disabled>2번</button>
+  <button disabled>3번</button>
+  <button disabled>4번</button>
+  <button disabled>5번</button>
+  <button disabled>6번</button>
+  <button disabled>7번</button>
+  <button disabled>8번</button>
+  <button disabled>9번</button>
+  <button disabled>10번</button>
+
+  <form action="/auth/logout" method="POST">
+    <button type="submit">로그아웃</button>
+  </form>
+</body>
+</html>

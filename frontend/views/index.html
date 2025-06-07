@@ -1,0 +1,56 @@
+<!-- 디렉토리 구조 기준: frontend/views/login.html -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>로그인</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 50px; text-align: center; }
+    form { display: inline-block; text-align: left; }
+    input[type="text"], input[type="password"] { 
+      margin: 10px 0; 
+      padding: 8px; 
+      width: 200px; 
+      display: block; 
+    }
+    .remember-row {
+      display: flex;
+      align-items: center;
+      margin: 10px 0 10px 0;
+    }
+    .remember-row input[type="checkbox"] {
+      width: 22px;
+      height: 22px;
+      margin-right: 10px;
+      accent-color: #0078d4;
+    }
+    .remember-row label {
+      font-size: 16px;
+      margin: 0;
+      cursor: pointer;
+    }
+    .login-btn, .logout-btn {
+      padding: 10px 20px;
+      font-size: 16px;
+      width: 100%;
+      margin-top: 12px;
+    }
+    .logout-btn {
+      margin-top: 20px; /* 로그인 버튼과의 간격을 크게 */
+    }
+  </style>
+</head>
+<body>
+  <h1>🔐 Login</h1>
+  <form action="/auth/login" method="POST">
+    <input type="text" name="username" placeholder="아이디" required /><br>
+    <input type="password" name="password" placeholder="비밀번호" required /><br>
+    <label class="remember-row">
+      <input type="checkbox" name="rememberMe" />
+      로그인 상태 유지
+    </label>
+    <button type="submit" class="login-btn">Login</button>
+    <button type="submit" class="logout-btn">Log Out</button>
+  </form>
+</body>
+</html>

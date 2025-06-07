@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>사용자 관리</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 30px;
+    }
+    h1, h2 {
+      margin-bottom: 20px;
+    }
+    input[type="file"] {
+      margin: 10px 0;
+    }
+    button {
+      padding: 10px 15px;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+    .message {
+      margin-top: 15px;
+      color: green;
+    }
+  </style>
+</head>
+<body>
+  <h1>👨‍🏫 사용자 관리</h1>
+
+  <h2>👥 사용자 엑셀 업로드</h2>
+  <form id="uploadForm" action="/upload/users" method="POST" enctype="multipart/form-data">
+    <input type="file" name="excelFile" accept=".xlsx" required />
+    <br />
+    <label>
+      <input type="radio" name="mode" value="append" checked />
+      추가 업로드 (기존 데이터 유지)
+    </label>
+    <label>
+      <input type="radio" name="mode" value="replace" />
+      전체 업로드 (기존 데이터 삭제 후 업로드)
+    </label>
+    <br />
+    <button type="submit">📤 업로드</button>
+  </form>
+
+  <form action="/auth/logout" method="POST">
+    <button type="submit">🚪 로그아웃</button>
+  </form>
+
+  <div id="message" class="message"></div>
+
+  <script>
+    // 업로드 성공 메시지 출력용 (선택 사항)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("success") === "true") {
+      document.getElementById("message").textContent = "✅ 업로드가 완료되었습니다.";
+    }
+    if (urlParams.get("error")) {
+      document.getElementById("message").textContent = "❌ 오류: " + urlParams.get("error");
+      document.getElementById("message").style.color = "red";
+    }
+  </script>
+</body>
+</html>

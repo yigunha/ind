@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>1번 게임</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    button {
+      font-size: 20px;
+      padding: 10px 20px;
+      margin: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🕹 1번 게임</h1>
+  <div>
+    <button onclick="submitChoice(1)">1</button>
+    <button onclick="submitChoice(2)">2</button>
+    <button onclick="submitChoice(3)">3</button>
+    <button onclick="submitChoice(4)">4</button>
+    <button onclick="cancelChoice()" id="cancelBtn" disabled>❌ 취소</button>
+  </div>
+  <form action="/auth/logout" method="POST">
+    <button type="submit">🚪 로그아웃</button>
+  </form>
+
+  <script>
+  const socket = io();
+  let responded = false;
+  let lastChoice = null; // 마지막 선택 번호 저장
+
+  const choiceButtons = document.querySelectorAll('button[onclick^="submitChoice"]');
+  const cancelBtn = document.getElementById('cancelBtn');
+
+  function submitChoice(number) {
+    if (!responded) {
+      socket.emit('submitChoice', number);
+      responded = true;
+      lastChoice = number; // 마지막 선택 저장
+      choiceButtons.forEach(btn => btn.disabled = true);
+      cancelBtn.disabled = false;
+    }
+  }
+
+  function cancelChoice() {
+    if (lastChoice !== null) {
+      socket.emit('cancelChoice', lastChoice); // 번호와 함께 전송
+      responded = false;
+      lastChoice = null;
+      choiceButtons.forEach(btn => btn.disabled = false);
+      cancelBtn.disabled = true;
+    }
+  }
+
+  socket.on('resetAll', () => {
+    responded = false;
+    lastChoice = null;
+    choiceButtons.forEach(btn => btn.disabled = false);
+    cancelBtn.disabled = true;
+  });
+  </script>
+</body>
+</html>
