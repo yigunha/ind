@@ -28,19 +28,15 @@ export default async function handler(req, res) {
   }
 
   const token = jwt.sign(
-    {
-      userId: user.id,
-      username: user.username,
-      userRole: user.role
-    },
+    { userId: user.id, username: user.username, userRole: user.role },
     process.env.JWT_SECRET_KEY,
     { expiresIn: '1h' }
   );
 
   return res.status(200).json({
     message: 'Login successful',
+    token,
     userRole: user.role,
-    token: token,
-    username: user.username
+    username: user.username,
   });
 }
