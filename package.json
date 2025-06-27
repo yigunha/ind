@@ -1,28 +1,29 @@
 {
   "name": "01.login",
   "version": "1.0.0",
-  "private": true,
+  "main": "index.js",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "description": "",
   "dependencies": {
-    "@supabase/supabase-js": "^2.43.4",  
-    "next": "14.2.3",                  
-    "react": "18.3.1",                  
-    "react-dom": "18.3.1",             
-    "bcryptjs": "^2.4.3",              
-    "jsonwebtoken": "^9.0.2",          
-    "xlsx": "^0.18.5"                  
+    "next": "^14.2.3",
+    "react": "^18",
+    "react-dom": "^18",
+    "jsonwebtoken": "^9.0.2",
+    "js-cookie": "^3.0.5",
+    "@supabase/supabase-js": "^2.43.4"
   },
   "devDependencies": {
     "eslint": "^8",
-    "eslint-config-next": "14.2.3",
-    "typescript": "^5",
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18"
+    "eslint-config-next": "^14.2.3"
   }
 }
