@@ -1,0 +1,24 @@
+<!-- student.html -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>학생 페이지</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+	<script type="module">
+  		import { checkRole, startAutoLogout } from './common.js';
+
+  		checkRole('student'); 
+  		startAutoLogout(60); 
+	</script>
+
+
+  	<div class="container">
+    		<h1>학생 페이지</h1>
+    		<p>단어 게임, 문장 퀴즈 등 학습 기능이 여기에 배치됩니다.</p>
+    		<a href="index.html">로그아웃</a>
+  	</div>
+</body>
+</html>

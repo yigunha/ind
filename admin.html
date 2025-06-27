@@ -1,0 +1,28 @@
+<!-- admin.html -->
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  	<meta charset="UTF-8">
+  	<title>관리자 페이지</title>
+  	<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  	<div class="container">
+    		<h1>관리자님 환영합니다</h1>
+    		<p>업로드 또는 사용자 관리를 진행하세요.</p>
+    		<a href="upload.html"> 사용자 업로드</a>
+    		<br>
+    		<a href="index.html">로그아웃</a>
+  	</div>
+
+	<script type="module">
+  		import { checkRole, startAutoLogout } from './common.js';
+
+  		checkRole('admin');
+  		startAutoLogout(60);
+	</script>
+</body>
+
+</html>

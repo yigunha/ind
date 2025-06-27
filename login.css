@@ -1,0 +1,59 @@
+body {
+  font-family: "Segoe UI", sans-serif;
+  background-color: #f4f6f8;
+  display: flex;
+  justify-content: center;
+  height: 40vh;
+  margin: 0;
+}
+
+.login-container {
+  margin-top: 10px;
+  background: #1976d2; /* 파란 배경 */
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  text-align: center;
+  width: 300px;
+  color: white; /* 기본 글자색 */
+}
+
+.login-container h1 {
+  font-size: 24px;
+  margin-bottom: 24px;
+  color: white;
+}
+
+.login-container input,
+.login-container button {
+  display: block;
+  width: 100%;
+  margin: 10px 0;
+  padding: 10px;
+  font-size: 16px;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+/* 입력창 */
+.login-container input {
+  border: 1px solid #ccc;
+  background-color: white;
+  color: #333;
+}
+
+.login-container input::placeholder {
+  color: #888;
+}
+
+/* 버튼 */
+.login-container button {
+  background-color: #9e9e9e;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.login-container button:hover {
+  background-color: #424242;
+}
