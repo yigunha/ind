@@ -40,7 +40,11 @@ export default function LoginPage() {
 
         switch (data.userRole) {
           case 'admin':
-            router.push('/gwan-ri-ja'); // Next.js에서는 .js 파일명이 경로가 됩니다.
+ console.log('관리자 역할 확인. /gwan-ri-ja로 리다이렉트 시도.');
+           // router.push('/gwan-ri-ja'); // Next.js에서는 .js 파일명이 경로가 됩니다.
+    setTimeout(() => {
+        router.push('/gwan-ri-ja');
+    }, 100); // 100ms 정도 지연 (테스트용, 값을 조절해 볼 수 있습니다)
             break;
           case 'teacher':
             router.push('/teacher');
