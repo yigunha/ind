@@ -39,11 +39,11 @@ export default async function handler(req, res) {
     // }
 
     // 현재는 단순 비교 (개발/테스트 용도)
-    if (username === 'master1' && password === '1234') {
-      isValidCredentials = true;
-      userRole = 'admin'; // 데이터베이스에서 조회된 user.role 값
-      userId = 1; // 임시 사용자 ID
-    }
+    //if (username === 'master1' && password === '1234') {
+    //  isValidCredentials = true;
+    //  userRole = 'admin'; // 데이터베이스에서 조회된 user.role 값
+    //  userId = 1; // 임시 사용자 ID
+   // }
     // --- 실제 인증 로직 끝 ---
 
 
