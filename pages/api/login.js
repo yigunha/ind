@@ -2,7 +2,10 @@ import { createClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY
+);
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -28,7 +31,11 @@ export default async function handler(req, res) {
   }
 
   const token = jwt.sign(
-    { userId: user.id, username: user.username, userRole: user.role },
+    {
+      userId: user.id,
+      username: user.username,
+      userRole: user.role,
+    },
     process.env.JWT_SECRET_KEY,
     { expiresIn: '1h' }
   );
