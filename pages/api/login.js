@@ -1,21 +1,42 @@
-// pages/api/login.js
-export default async function handler(req, res) {
-  if (req.method === 'POST') {
-    // 여기에 로그인 처리 로직 (ID/PW 확인, 데이터베이스 조회, JWT 발행 등)을 작성합니다.
-    // 예를 들어:
-    const { username, password } = req.body;
+import { createClient } from '@supabase/supabase-js';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
-    // 실제 인증 로직 (예: 데이터베이스 조회 및 비밀번호 비교)
-    if (username === 'master1' && password === '1234') { // 임시 예시
-      // 로그인 성공 시 응답
-      return res.status(200).json({ message: 'Login successful' });
-    } else {
-      // 로그인 실패 시 응답
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
-  } else {
-    // POST 요청이 아닌 다른 메서드 요청 시 (405 Method Not Allowed)
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
     return res.status(405).end(`Method ${req.method} Not Allowed`);
   }
+
+  const { username, password } = req.body;
+
+  const { data: users, error } = await supabase
+    .from('users')
+    .select('id, username, password, role')
+    .eq('username', username);
+
+  if (error || users.length === 0) {
+    return res.status(401).json({ message: '존재하지 않는 사용자입니다.' });
+  }
+
+  const user = users[0];
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) {
+    return res.status(401).json({ message: '비밀번호가 일치하지 않습니다.' });
+  }
+
+  const token = jwt.sign(
+    { userId: user.id, username: user.username, userRole: user.role },
+    process.env.JWT_SECRET_KEY,
+    { expiresIn: '1h' }
+  );
+
+  return res.status(200).json({
+    message: 'Login successful',
+    token,
+    userRole: user.role,
+    username: user.username,
+  });
 }
