@@ -13,12 +13,6 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
 
-    if (!username || !password) {
-      setError('ID와 비밀번호를 입력해주세요.');
-      setLoading(false);
-      return;
-    }
-
     try {
       const response = await fetch('/api/login', {
         method: 'POST',
@@ -30,7 +24,7 @@ export default function LoginPage() {
       try {
         data = await response.json();
       } catch (err) {
-        console.error('JSON 파싱 오류:', err);
+        console.error('JSON 파싱 실패:', err);
       }
 
       if (response.ok) {
@@ -39,42 +33,32 @@ export default function LoginPage() {
         localStorage.setItem('username', data.username);
         localStorage.setItem('isLoggedIn', 'true');
 
-        switch (data.userRole) {
-          case 'admin':
-            router.push('/gwan-ri-ja');
-            break;
-          case 'teacher':
-            router.push('/teacher');
-            break;
-          case 'student':
-            router.push('/student');
-            break;
-          default:
-            setError('알 수 없는 사용자 역할입니다.');
-        }
+        if (data.userRole === 'admin') router.push('/gwan-ri-ja');
+        else if (data.userRole === 'teacher') router.push('/teacher');
+        else if (data.userRole === 'student') router.push('/student');
+        else setError('알 수 없는 사용자 역할입니다.');
       } else {
         setError(data?.message || '로그인 실패');
       }
     } catch (err) {
-      console.error('요청 오류:', err);
-      setError('네트워크 또는 서버 오류입니다.');
+      setError('네트워크 또는 서버 오류');
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{ padding: '40px', fontFamily: 'Arial' }}>
+    <div className="login-container">
       <h1>로그인</h1>
       <form onSubmit={handleLogin}>
         <input
           type="text"
-          placeholder="ID"
+          placeholder="아이디"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           disabled={loading}
         />
-        <br />
         <input
           type="password"
           placeholder="비밀번호"
@@ -82,11 +66,10 @@ export default function LoginPage() {
           onChange={(e) => setPassword(e.target.value)}
           disabled={loading}
         />
-        <br />
         <button type="submit" disabled={loading}>
           {loading ? '로그인 중...' : '로그인'}
         </button>
-        {error && <p style={{ color: 'red' }}>{error}</p>}
+        {error && <p className="error-text">{error}</p>}
       </form>
     </div>
   );
