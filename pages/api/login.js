@@ -79,6 +79,9 @@ export default function LoginPage() {
         backgroundColor: '#f0f2f5',
         fontFamily: 'Arial, sans-serif'
     }}>
+
+<h1 style={{ color: 'lime', zIndex: 9999, position: 'absolute', top: '10px', left: '10px' }}>로그인 페이지 TEST</h1>
+
       <div style={{
           backgroundColor: 'white',
           padding: '40px',
