@@ -1,7 +1,8 @@
 import formidable from 'formidable';
-import * as XLSX from 'xlsx';
-import { createClient } from '@supabase/supabase-js';
 import fs from 'fs';
+import path from 'path';
+import { createClient } from '@supabase/supabase-js';
+import xlsx from 'xlsx';
 
 export const config = {
   api: {
@@ -15,39 +16,46 @@ const supabase = createClient(
 );
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
 
   const form = new formidable.IncomingForm();
-  form.uploadDir = './';
+  form.uploadDir = path.join(process.cwd(), '/public/uploads');
   form.keepExtensions = true;
 
   form.parse(req, async (err, fields, files) => {
-    if (err || !files.file) {
-      return res.status(400).json({ error: '파일 업로드 실패' });
+    if (err) return res.status(500).json({ error: '파일 파싱 오류' });
+
+    const file = files.file;
+    if (!file || !file.filepath) {
+      return res.status(400).json({ error: '파일이 없습니다.' });
     }
 
-    const filepath = files.file[0].filepath;
-    const workbook = XLSX.readFile(filepath);
-    const sheetName = workbook.SheetNames[0];
-    const sheet = workbook.Sheets[sheetName];
-    const jsonData = XLSX.utils.sheet_to_json(sheet);
+    try {
+      const workbook = xlsx.readFile(file.filepath);
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const data = xlsx.utils.sheet_to_json(sheet);
 
-    let failed = 0;
+      let success = 0, failed = 0;
+      for (const row of data) {
+        const { id, name, class: className } = row;
+        if (!id || !name || !className) {
+          failed++;
+          continue;
+        }
 
-    for (const row of jsonData) {
-      const { id, password, role } = row;
-      const { error } = await supabase.from('users').insert([{ id, password, role }]);
-      if (error) {
-        console.error('Insert error:', error);
-        failed++;
+        const { error } = await supabase.from('students').insert([{ id, name, class: className }]);
+        if (error) failed++;
+        else success++;
       }
+
+      fs.unlinkSync(file.filepath); // 업로드된 파일 삭제
+      return res.status(200).json({ success, failed });
+
+    } catch (e) {
+      return res.status(500).json({ error: '파일 처리 오류', detail: e.message });
     }
-
-    fs.unlinkSync(filepath); // 업로드 파일 삭제
-
-    return res.status(200).json({
-      success: jsonData.length - failed,
-      failed,
-    });
   });
 }
