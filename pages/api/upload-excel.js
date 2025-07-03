@@ -30,7 +30,7 @@ export default async function handler(req, res) {
   const token = authHeader.split(' ')[1];
   const decodedToken = verifyToken(token);
 
-  if (!decodedToken || decodedToken.role !== 'admin') {
+if (!decodedToken || decodedToken.userRole !== 'admin') {
     return res.status(403).json({ message: '이 작업을 수행할 권한이 없습니다. 관리자만 가능합니다.' });
   }
 
