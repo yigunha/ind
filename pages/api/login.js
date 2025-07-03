@@ -2,7 +2,11 @@ import { createClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
+
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -11,6 +15,8 @@ export default async function handler(req, res) {
   }
 
   const { username, password } = req.body;
+
+  console.log('클라이언트에서 받은 요청:', { username, password });
 
   const { data: users, error } = await supabase
     .from('users')
@@ -28,8 +34,12 @@ export default async function handler(req, res) {
   }
 
   const token = jwt.sign(
-    { userId: user.id, username: user.username, userRole: user.role },
-    process.env.JWT_SECRET_KEY,
+    {
+      userId: user.id,
+      username: user.username,
+      userRole: user.role,
+    },
+    process.env.JWT_SECRET,
     { expiresIn: '1h' }
   );
 

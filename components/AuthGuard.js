@@ -52,7 +52,7 @@ export default function AuthGuard({ children, allowedRoles }) {
           return;
         }
 
-        const userRole = decoded.role; // 디코딩된 토큰에서 역할 정보 추출
+        const userRole = decoded.userRole; // 디코딩된 토큰에서 역할 정보 추출
 
         // 3. 허용된 역할과 현재 사용자의 역할 비교
         // allowedRoles가 정의되어 있고, 현재 사용자의 역할이 allowedRoles에 포함되어 있지 않은 경우
