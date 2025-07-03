@@ -31,9 +31,10 @@ export default async function handler(req, res) {
 
 // 사용자 조회 후
 if (user) {
-  console.log("입력된 유저명:", username);
-  console.log("입력된 비밀번호:", password);
-  console.log("조회된 유저:", user);
+console.log("입력된 유저명:", username);
+console.log("입력된 비밀번호:", password);
+console.log("조회된 유저:", user);
+console.log("DB에 저장된 비밀번호:", user?.password);
 }
 
   const isMatch = await bcrypt.compare(password, user.password);
