@@ -1,21 +1,17 @@
 import { useState } from 'react';
 
-export default function GwanRiJa() {
-  const [uploading, setUploading] = useState(false);
+export default function GwanRiJaPage() {
+  const [file, setFile] = useState(null);
 
-  const handleUpload = async (e) => {
-    e.preventDefault();
+  const handleFileChange = (e) => {
+    setFile(e.target.files[0]);
+  };
 
-    const fileInput = document.getElementById('excelFile');
-    if (!fileInput.files.length) {
-      alert('파일을 선택하세요.');
-      return;
-    }
+  const handleUpload = async () => {
+    if (!file) return alert('파일을 선택해주세요.');
 
     const formData = new FormData();
-    formData.append('file', fileInput.files[0]);
-
-    setUploading(true);
+    formData.append('file', file);
 
     try {
       const res = await fetch('/api/upload-excel', {
@@ -23,32 +19,27 @@ export default function GwanRiJa() {
         body: formData,
       });
 
-      const result = await res.json();
-
       if (!res.ok) {
-        console.error("❌ Upload failed:", result.error);
-        alert("업로드 실패: " + result.error);
-      } else {
-        console.log("✅ Upload success:", result.message);
-        alert("업로드 성공!");
+        const text = await res.text();
+        console.error('❌ 서버 오류:', text);
+        alert('서버 오류: ' + text);
+        return;
       }
+
+      const result = await res.json();
+      console.log('✅ 업로드 결과:', result);
+      alert('업로드 성공!');
     } catch (err) {
-      console.error("❌ Fetch error:", err);
-      alert("서버 오류: " + err.message);
-    } finally {
-      setUploading(false);
+      console.error('❌ 예외 발생:', err);
+      alert('예외 발생: ' + err.message);
     }
   };
 
   return (
-    <div>
-      <h2>관리자 엑셀 업로드</h2>
-      <form onSubmit={handleUpload}>
-        <input type="file" id="excelFile" accept=".xlsx,.xls" />
-        <button type="submit" disabled={uploading}>
-          {uploading ? "업로드 중..." : "업로드"}
-        </button>
-      </form>
+    <div style={{ padding: '2rem', color: 'white' }}>
+      <h1>관리자 엑셀 업로드</h1>
+      <input type="file" onChange={handleFileChange} />
+      <button onClick={handleUpload} style={{ marginLeft: '1rem' }}>업로드</button>
     </div>
   );
 }
