@@ -52,7 +52,7 @@ if (!decodedToken || decodedToken.userRole !== 'admin') {
       }
 
       // 2. 비밀번호 해싱
-      const hashedPassword = await bcrypt.hash(password, 10); // saltRounds 10으로 해싱
+      const hashedPassword = await bcrypt.hash(String(password), 10);
 
       // 3. Supabase DB에 사용자 데이터 삽입 또는 업데이트 (upsert)
       // username이 이미 존재하면 업데이트, 없으면 삽입
