@@ -1,17 +1,20 @@
 import { useState } from 'react';
 
-export default function GwanRiJaPage() {
-  const [file, setFile] = useState(null);
+export default function GwanRiJa() {
+  const [selectedFile, setSelectedFile] = useState(null);
 
   const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
+    setSelectedFile(e.target.files[0]);
   };
 
   const handleUpload = async () => {
-    if (!file) return alert('파일을 선택해주세요.');
+    if (!selectedFile) {
+      alert('파일을 선택해주세요');
+      return;
+    }
 
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('file', selectedFile);
 
     try {
       const res = await fetch('/api/upload-excel', {
@@ -19,27 +22,23 @@ export default function GwanRiJaPage() {
         body: formData,
       });
 
-      if (!res.ok) {
-        const text = await res.text();
-        console.error('❌ 서버 오류:', text);
-        alert('서버 오류: ' + text);
-        return;
-      }
-
       const result = await res.json();
-      console.log('✅ 업로드 결과:', result);
-      alert('업로드 성공!');
-    } catch (err) {
-      console.error('❌ 예외 발생:', err);
-      alert('예외 발생: ' + err.message);
+
+      if (res.ok) {
+        alert('업로드 성공');
+      } else {
+        alert(`서버 오류: ${result.error}`);
+      }
+    } catch (error) {
+      alert(`서버 오류: ${error.message}`);
     }
   };
 
   return (
-    <div style={{ padding: '2rem', color: 'white' }}>
-      <h1>관리자 엑셀 업로드</h1>
-      <input type="file" onChange={handleFileChange} />
-      <button onClick={handleUpload} style={{ marginLeft: '1rem' }}>업로드</button>
+    <div style={{ padding: '20px' }}>
+      <h2>관리자 엑셀 업로드</h2>
+      <input type="file" accept=".xlsx" onChange={handleFileChange} />
+      <button onClick={handleUpload}>업로드</button>
     </div>
   );
 }
