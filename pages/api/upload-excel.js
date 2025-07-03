@@ -2,7 +2,6 @@ import formidable from 'formidable';
 import fs from 'fs';
 import path from 'path';
 import { createClient } from '@supabase/supabase-js';
-import xlsx from 'xlsx';
 
 export const config = {
   api: {
@@ -16,46 +15,33 @@ const supabase = createClient(
 );
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
-  }
+  if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
 
-  const form = new formidable.IncomingForm();
-  form.uploadDir = path.join(process.cwd(), '/public/uploads');
-  form.keepExtensions = true;
+  const uploadDir = path.join(process.cwd(), 'public/uploads');
+  if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+  const form = formidable({ multiples: false, uploadDir, keepExtensions: true });
 
   form.parse(req, async (err, fields, files) => {
-    if (err) return res.status(500).json({ error: '파일 파싱 오류' });
-
-    const file = files.file;
-    if (!file || !file.filepath) {
-      return res.status(400).json({ error: '파일이 없습니다.' });
+    if (err) {
+      console.error("❌ Form parsing error:", err);
+      return res.status(500).json({ error: 'Form parsing failed' });
     }
 
+    if (!files.file) {
+      console.error("❌ No file uploaded");
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const filePath = files.file.filepath;
+    console.log("📁 Uploaded file path:", filePath);
+
     try {
-      const workbook = xlsx.readFile(file.filepath);
-      const sheetName = workbook.SheetNames[0];
-      const sheet = workbook.Sheets[sheetName];
-      const data = xlsx.utils.sheet_to_json(sheet);
-
-      let success = 0, failed = 0;
-      for (const row of data) {
-        const { id, name, class: className } = row;
-        if (!id || !name || !className) {
-          failed++;
-          continue;
-        }
-
-        const { error } = await supabase.from('students').insert([{ id, name, class: className }]);
-        if (error) failed++;
-        else success++;
-      }
-
-      fs.unlinkSync(file.filepath); // 업로드된 파일 삭제
-      return res.status(200).json({ success, failed });
-
+      // TODO: 엑셀 파싱 후 Supabase 저장 로직 삽입 예정
+      return res.status(200).json({ message: 'File uploaded successfully' });
     } catch (e) {
-      return res.status(500).json({ error: '파일 처리 오류', detail: e.message });
+      console.error("❌ File processing error:", e);
+      return res.status(500).json({ error: 'Failed to process file' });
     }
   });
 }
