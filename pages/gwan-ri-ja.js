@@ -1,30 +1,38 @@
-// pages/gwan-ri-ja.js
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import FileUpload from '../components/FileUpload'; // 파일 업로드 컴포넌트 임포트
 
 export default function GwanRiJaPage() {
   const router = useRouter();
-  const [username, setUsername] = useState(''); // 사용자 이름 표시용 상태
+  const [username, setUsername] = useState('');
+  const [file, setFile] = useState(null);
+  const [uploadResult, setUploadResult] = useState(null);
 
   useEffect(() => {
-    // 로컬 스토리지에서 사용자 이름 가져와 표시 (UX 개선 목적)
-    const storedUsername = localStorage.getItem('username'); // 로그인 시 사용자 이름도 저장하면 좋음
-    if (storedUsername) {
-      setUsername(storedUsername);
-    }
-    // 실제 사용자 이름은 JWT에서 디코딩하여 서버 측에서 확인하는 것이 더 정확하고 안전합니다.
+    const storedUsername = localStorage.getItem('username');
+    if (storedUsername) setUsername(storedUsername);
   }, []);
 
   const handleLogout = () => {
-    // 로컬 스토리지에서 모든 인증 정보 제거
     localStorage.removeItem('jwt_token');
     localStorage.removeItem('userRole');
     localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('username'); // 저장했다면 제거
-
-    // 로그인 페이지로 리다이렉트
+    localStorage.removeItem('username');
     router.replace('/login');
+  };
+
+  const handleUpload = async () => {
+    if (!file) return alert('엑셀 파일을 선택하세요.');
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await fetch('/api/upload-excel', {
+      method: 'POST',
+      body: formData,
+    });
+
+    const result = await res.json();
+    setUploadResult(result);
   };
 
   return (
@@ -48,8 +56,18 @@ export default function GwanRiJaPage() {
 
       <hr style={{ margin: '30px 0', borderColor: '#eee' }} />
 
-      {/* 파일 업로드 기능 포함 */}
-      <FileUpload />
+      {/* 엑셀 업로드 UI */}
+      <h3>엑셀로 사용자 업로드</h3>
+      <input type="file" accept=".xlsx" onChange={(e) => setFile(e.target.files[0])} />
+      <button onClick={handleUpload} style={{ marginLeft: '10px' }}>
+        업로드
+      </button>
+
+      {uploadResult && (
+        <div style={{ marginTop: '20px', color: 'green' }}>
+          ✅ 업로드 결과: 성공 {uploadResult.success}명 / 실패 {uploadResult.failed}명
+        </div>
+      )}
     </div>
   );
 }
