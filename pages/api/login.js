@@ -28,6 +28,14 @@ export default async function handler(req, res) {
   }
 
   const user = users[0];
+
+// 사용자 조회 후
+if (user) {
+  console.log("입력된 유저명:", username);
+  console.log("입력된 비밀번호:", password);
+  console.log("조회된 유저:", user);
+}
+
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
     return res.status(401).json({ message: '비밀번호가 일치하지 않습니다.' });
@@ -50,3 +58,7 @@ export default async function handler(req, res) {
     username: user.username,
   });
 }
+
+
+
+
