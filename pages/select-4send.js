@@ -1,7 +1,6 @@
 // pages/select-4send.js
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-// import Cookies from 'js-cookie'; // js-cookie는 더 이상 필요 없으므로 주석 처리하거나 삭제
 
 export default function Select4Send() {
   const router = useRouter();
@@ -14,13 +13,12 @@ export default function Select4Send() {
   // Supabase 클라이언트 임포트는 utils/supabaseClient.js 파일이 있다고 가정합니다.
   const { supabase } = require('../utils/supabaseClient'); 
 
-
   useEffect(() => {
-    // **** 여기를 수정합니다: Cookies 대신 localStorage 사용 ****
+    // localStorage에서 사용자 정보 가져오기 (사용자님의 기존 방식 유지)
     const storedUsername = localStorage.getItem('username');
     const storedUserId = localStorage.getItem('userId'); // userId도 localStorage에서 가져옴
 
-    if (!storedUsername || !storedUserId) {
+    if (!storedUsername || !storedUserId) { // <<<<< storedUserId가 없으면 로그인 페이지로 리다이렉트
       // 로그인 정보가 없으면 로그인 페이지로 이동
       router.push('/login');
     } else {
@@ -42,7 +40,7 @@ export default function Select4Send() {
         .eq('user_id', currentUserId)
         .single(); // 단일 레코드만 가져옴
 
-      if (error && error.code !== 'PGRST116') { // PGRST116은 데이터가 없을 때 발생
+      if (error && error.code !== 'PGRST116') { // PGRST116은 데이터가 없을 때 발생 (데이터 없음 오류)
         console.error('Error fetching user selection:', error.message);
         setError('선택 정보를 불러오는 데 실패했습니다.');
       } else if (data) {
@@ -130,7 +128,6 @@ export default function Select4Send() {
     }
   };
 
-
   if (loading) return <div style={{ textAlign: 'center', marginTop: '50px' }}>로그인 정보 확인 중...</div>;
   if (error) return <div style={{ textAlign: 'center', marginTop: '50px', color: 'red' }}>오류: {error}</div>;
 
@@ -188,10 +185,6 @@ export default function Select4Send() {
       >
         선택 취소
       </button>
-
-      {/* JWT 토큰 관련 오류는 이 수정으로 해결될 것으로 예상됩니다.
-          만약 여전히 발생한다면, Supabase 연동에 필요한 RLS 정책 등을 추가 확인해야 합니다.
-      */}
     </div>
   );
 }

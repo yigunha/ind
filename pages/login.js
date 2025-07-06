@@ -1,3 +1,4 @@
+// pages/login.js
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 
@@ -28,9 +29,11 @@ export default function LoginPage() {
       }
 
       if (response.ok) {
+        // localStorage에 인증 정보 저장 (사용자님의 기존 방식 유지)
         localStorage.setItem('jwt_token', data.token);
         localStorage.setItem('userRole', data.userRole);
         localStorage.setItem('username', data.username);
+        localStorage.setItem('userId', data.userId); // <<<<< 이 부분이 userId를 저장하는 부분입니다.
         localStorage.setItem('isLoggedIn', 'true');
 
         if (data.userRole === 'admin') router.push('/gwan-ri-ja');

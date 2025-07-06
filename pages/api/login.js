@@ -8,7 +8,6 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
@@ -17,7 +16,7 @@ export default async function handler(req, res) {
 
   const { username, password } = req.body;
 
-  console.log('클라이언트에서 받은 요청:', { username, password });
+  // console.log('클라이언트에서 받은 요청:', { username, password }); // 디버깅용
 
   const { data: users, error } = await supabase
     .from('users')
@@ -29,14 +28,6 @@ export default async function handler(req, res) {
   }
 
   const user = users[0];
-
-// 사용자 조회 후
-if (user) {
-console.log("입력된 유저명:", username);
-console.log("입력된 비밀번호:", password);
-console.log("조회된 유저:", user);
-console.log("DB에 저장된 비밀번호:", user?.password);
-}
 
   const isMatch = await bcrypt.compare(password, user.password);
 
@@ -57,6 +48,6 @@ console.log("DB에 저장된 비밀번호:", user?.password);
     token,
     userRole: user.role,
     username: user.username,
-    userId: user.id, // <-- 이 부분이 반드시 포함되어야 합니다!
+    userId: user.id, // <<<<< 이 부분이 가장 중요합니다! 이 부분을 꼭 포함시켜야 합니다.
   });
 }
