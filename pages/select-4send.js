@@ -16,7 +16,7 @@ export default function Select4Send() {
 
   useEffect(() => {
     // router가 준비될 때까지 기다립니다.
-    if (!router.isReady) { // <<<<< 이 조건이 중요합니다!
+    if (!router.isReady) { // <<<<< 이 조건 추가
       return;
     }
 
@@ -27,6 +27,7 @@ export default function Select4Send() {
     console.log("useEffect: storedUserId:", storedUserId);
 
     if (!storedUsername || !storedUserId) {
+      // 로그인 정보가 없으면 로그인 페이지로 이동
       router.push('/login');
     } else {
       setUsername(storedUsername);
@@ -39,34 +40,29 @@ export default function Select4Send() {
 
   // 사용자의 현재 선택 번호를 불러오는 함수
   const fetchUserSelection = async (currentUserId) => {
-    if (!currentUserId) { // currentUserId가 null이면 함수 실행 중단
-        console.warn('fetchUserSelection: currentUserId is null or undefined');
-        setError('사용자 정보를 불러올 수 없습니다.'); // 사용자에게 표시할 에러 메시지
-        return;
-    }
+    if (!currentUserId) return;
     try {
       const { data, error } = await supabase
         .from('student_number_selections')
         .select('selected_number')
         .eq('user_id', currentUserId)
-        .single(); // 단일 레코드만 가져옵니다.
+        .single();
 
-      if (error && error.code !== 'PGRST116') { // PGRST116은 '없음'을 의미, 에러 아님
+      if (error && error.code !== 'PGRST116') { // PGRST116은 데이터 없음 에러 코드
         console.error('Error fetching user selection:', error.message);
         setError('선택 정보를 불러오는 데 실패했습니다.');
       } else if (data) {
         setSelectedNumber(data.selected_number);
       }
     } catch (err) {
-      console.error('Network error fetching user selection:', err);
-      setError('네트워크 오류로 선택 정보를 불러올 수 없습니다.');
+      console.error('선택 정보를 불러오는 중 오류:', err);
+      setError(err.message || '선택 정보를 불러오는 데 실패했습니다.');
     }
   };
 
-  // 번호 선택 및 데이터베이스에 저장
   const handleSelection = async (number) => {
-    if (!userId) {
-      setError('사용자 ID를 찾을 수 없습니다. 다시 로그인해주세요.');
+    if (!userId) { // userId가 없으면 함수 실행 중단 (로그인 정보 없음)
+      setError('로그인 정보가 없습니다. 다시 로그인해주세요.');
       router.push('/login');
       return;
     }
@@ -74,85 +70,64 @@ export default function Select4Send() {
     setError(null);
 
     try {
-      // 기존 선택이 있는지 확인
-      const { data: existingData, error: fetchError } = await supabase
+      // 먼저 기존 선택이 있는지 확인
+      const { data: existingSelection, error: fetchErr } = await supabase
         .from('student_number_selections')
         .select('id')
         .eq('user_id', userId)
         .single();
 
-      if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116은 데이터 없음 오류
-        throw fetchError;
+      if (fetchErr && fetchErr.code !== 'PGRST116') { // PGRST116은 데이터 없음 에러 코드
+        throw new Error(`기존 선택 불러오기 실패: ${fetchErr.message}`);
       }
 
-      let updateError;
-      if (existingData) {
+      let updateError = null;
+      if (existingSelection) {
         // 기존 선택이 있으면 업데이트
         const { error: updateErr } = await supabase
           .from('student_number_selections')
           .update({ selected_number: number })
-          .eq('user_id', userId);
+          .eq('user_id', userId)
+          .eq('id', existingSelection.id); // 해당 user_id와 id를 가진 로우만 업데이트
         updateError = updateErr;
       } else {
-        // 기존 선택이 없으면 새로 삽입
+        // 기존 선택이 없으면 새로 삽입 (user_id 필드를 제거)
         const { error: insertErr } = await supabase
           .from('student_number_selections')
-          .insert({ user_id: userId, username: username, selected_number: number });
+          .insert({ username: username, selected_number: number }); // <<<<< user_id 필드 제거
         updateError = insertErr;
       }
 
       if (updateError) {
-        throw updateError;
+        console.error('데이터 저장 실패:', updateError);
+        setError(`선택 저장 실패: ${updateError.message}`);
+      } else {
+        setSelectedNumber(number);
+        alert('번호가 성공적으로 저장되었습니다!');
       }
-
-      setSelectedNumber(number);
-      alert(`${number}번을 선택했습니다.`);
     } catch (err) {
-      console.error('Error saving selection:', err);
-      setError(`선택 저장 실패: ${err.message}`);
+      console.error('선택 처리 중 오류:', err);
+      setError(err.message || '번호 선택 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
   };
 
-  // 선택 취소 함수
-  const handleCancel = async () => {
-    if (!userId) {
-        setError('사용자 ID를 찾을 수 없습니다. 다시 로그인해주세요.');
-        router.push('/login');
-        return;
-    }
-    setLoading(true);
-    setError(null);
-
-    try {
-      const { error: deleteError } = await supabase
-        .from('student_number_selections')
-        .delete()
-        .eq('user_id', userId);
-
-      if (deleteError) {
-        throw deleteError;
-      }
-
-      setSelectedNumber(null);
-      alert('선택을 취소했습니다.');
-    } catch (err) {
-      console.error('Error canceling selection:', err);
-      setError(`선택 취소 실패: ${err.message}`);
-    } finally {
-      setLoading(false);
-    }
+  const handleCancel = () => {
+    router.push('/student'); // 학생 페이지로 돌아가기
   };
 
-  if (loading) return <div style={{ textAlign: 'center', marginTop: '50px' }}>로딩 중...</div>;
-  if (error) return <div style={{ textAlign: 'center', marginTop: '50px', color: 'red' }}>오류: {error}</div>;
+  if (loading) {
+    return <div style={{ textAlign: 'center', marginTop: '50px', fontSize: '1.2em' }}>로딩 중...</div>;
+  }
+
+  if (error) {
+    return <div style={{ textAlign: 'center', marginTop: '50px', color: 'red', fontSize: '1.2em' }}>오류: {error}</div>;
+  }
 
   return (
     <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', textAlign: 'center', fontFamily: 'Arial, sans-serif' }}>
-      <h1 style={{ color: '#333', marginBottom: '25px' }}>
-        환영합니다, {username || '게스트'}님!
-      </h1>
+      <h1 style={{ color: '#333', marginBottom: '25px' }}>안녕하세요, {username}님!</h1>
 
       {selectedNumber !== null ? (
         <p style={{ fontSize: '1.5em', fontWeight: 'bold', color: 'green', marginBottom: '20px' }}>
@@ -198,10 +173,9 @@ export default function Select4Send() {
           borderRadius: '5px',
           cursor: 'pointer',
           boxShadow: '2px 2px 5px rgba(0,0,0,0.1)',
-          transition: 'background-color 0.3s ease',
         }}
       >
-        선택 취소
+        돌아가기
       </button>
     </div>
   );
