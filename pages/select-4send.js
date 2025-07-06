@@ -1,174 +1,197 @@
 // pages/select-4send.js
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import Cookies from 'js-cookie';
-import { supabase } from '../utils/supabaseClient'; // Supabase 클라이언트 임포트
+// import Cookies from 'js-cookie'; // js-cookie는 더 이상 필요 없으므로 주석 처리하거나 삭제
 
 export default function Select4Send() {
   const router = useRouter();
   const [username, setUsername] = useState('');
   const [userId, setUserId] = useState(null);
-  const [currentSelection, setCurrentSelection] = useState(null); // 현재 선택 값 상태
+  const [selectedNumber, setSelectedNumber] = useState(null); // 사용자의 현재 선택 번호
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Supabase 클라이언트 임포트는 utils/supabaseClient.js 파일이 있다고 가정합니다.
+  const { supabase } = require('../utils/supabaseClient'); 
+
 
   useEffect(() => {
-    const storedUsername = Cookies.get('username');
-    const storedUserId = Cookies.get('userId');
+    // **** 여기를 수정합니다: Cookies 대신 localStorage 사용 ****
+    const storedUsername = localStorage.getItem('username');
+    const storedUserId = localStorage.getItem('userId'); // userId도 localStorage에서 가져옴
 
     if (!storedUsername || !storedUserId) {
-      router.push('/login'); // 로그인 정보 없으면 로그인 페이지로
+      // 로그인 정보가 없으면 로그인 페이지로 이동
+      router.push('/login');
     } else {
       setUsername(storedUsername);
       setUserId(storedUserId);
-      // 페이지 로드 시 현재 사용자의 마지막 선택을 불러옴 (선택적)
+      setLoading(false);
+      // 페이지 로드 시 현재 사용자의 마지막 선택을 불러옴
       fetchUserSelection(storedUserId);
     }
   }, [router]);
 
-  // 사용자의 마지막 선택을 불러오는 함수
-  const fetchUserSelection = async (userId) => {
-    if (!userId) return;
-    const { data, error } = await supabase
-      .from('student_number_selections')
-      .select('selected_number')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false }) // 가장 최신 선택
-      .limit(1)
-      .single(); // 단일 레코드만 가져옴
+  // 사용자의 현재 선택 번호를 불러오는 함수
+  const fetchUserSelection = async (currentUserId) => {
+    if (!currentUserId) return;
+    try {
+      const { data, error } = await supabase
+        .from('student_number_selections')
+        .select('selected_number')
+        .eq('user_id', currentUserId)
+        .single(); // 단일 레코드만 가져옴
 
-    if (error && error.code !== 'PGRST116') { // PGRST116은 데이터 없을 때 발생
-      console.error('Error fetching user selection:', error.message);
-    } else if (data) {
-      setCurrentSelection(data.selected_number);
+      if (error && error.code !== 'PGRST116') { // PGRST116은 데이터가 없을 때 발생
+        console.error('Error fetching user selection:', error.message);
+        setError('선택 정보를 불러오는 데 실패했습니다.');
+      } else if (data) {
+        setSelectedNumber(data.selected_number);
+      }
+    } catch (err) {
+      console.error('Network error fetching user selection:', err);
+      setError('네트워크 오류로 선택 정보를 불러올 수 없습니다.');
     }
   };
 
   const handleSelection = async (number) => {
-    if (!userId || !username) {
-      alert('로그인 정보가 없습니다. 다시 로그인해주세요.');
-      router.push('/login');
+    if (selectedNumber === number) {
+      alert(`이미 ${number}번을 선택했습니다.`);
       return;
     }
-
+    
+    // 이전에 선택한 기록이 있는지 확인 (업데이트 또는 삽입)
     try {
-      // Supabase에 데이터 upsert (삽입 또는 업데이트)
-      // user_id를 기준으로 이미 존재하는 레코드가 있다면 업데이트, 없다면 삽입
-      const { data, error } = await supabase
-        .from('student_number_selections')
-        .upsert(
-          { 
-            user_id: userId, 
-            username: username, 
-            selected_number: number 
-          },
-          { 
-            onConflict: 'user_id', // user_id가 중복될 경우 업데이트
-            ignoreDuplicates: false // 중복 레코드를 무시하지 않고 업데이트 (기존 레코드의 created_at이 변경되지 않음)
-          }
-        )
-        .select(); // 업데이트된 레코드를 반환
+        const { data: existingSelection, error: fetchError } = await supabase
+            .from('student_number_selections')
+            .select('id')
+            .eq('user_id', userId)
+            .single();
 
-      if (error) {
-        throw error;
-      }
+        if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116은 데이터가 없을 때 발생
+            throw fetchError;
+        }
 
-      console.log('Selection updated:', data);
-      setCurrentSelection(number); // UI 업데이트
-      alert(`${number}번을 선택했습니다!`);
+        let updateError = null;
+        if (existingSelection) {
+            // 기존 선택이 있으면 업데이트
+            const { error } = await supabase
+                .from('student_number_selections')
+                .update({ selected_number: number, created_at: new Date().toISOString() }) // created_at 업데이트
+                .eq('id', existingSelection.id);
+            updateError = error;
+        } else {
+            // 기존 선택이 없으면 새로 삽입
+            const { error } = await supabase
+                .from('student_number_selections')
+                .insert([
+                    { user_id: userId, username: username, selected_number: number }
+                ]);
+            updateError = error;
+        }
 
-    } catch (error) {
-      console.error('Error updating selection:', error.message);
-      alert(`선택 실패: ${error.message}`);
+        if (updateError) {
+            console.error('Error updating/inserting selection:', updateError.message);
+            setError(`선택 저장 실패: ${updateError.message}`);
+        } else {
+            setSelectedNumber(number); // UI 업데이트
+            alert(`${number}번을 선택했습니다!`);
+            // 성공적으로 선택했으므로 실시간으로 반영될 것임
+        }
+
+    } catch (err) {
+        console.error('Database operation error:', err);
+        setError('데이터베이스 작업 중 오류가 발생했습니다.');
     }
   };
 
   const handleCancel = async () => {
-    if (!userId) {
-      alert('로그인 정보가 없습니다.');
+    if (selectedNumber === null) {
+      alert('아직 선택한 번호가 없습니다.');
       return;
     }
 
     try {
-      // Supabase에서 해당 user_id의 모든 선택 기록 삭제
       const { error } = await supabase
         .from('student_number_selections')
         .delete()
         .eq('user_id', userId);
 
       if (error) {
-        throw error;
+        console.error('Error canceling selection:', error.message);
+        setError('선택 취소 실패.');
+      } else {
+        setSelectedNumber(null); // UI 업데이트
+        alert('선택을 취소했습니다.');
       }
-
-      console.log('Selection cancelled for user:', userId);
-      setCurrentSelection(null); // UI 업데이트
-      alert('선택을 취소했습니다.');
-
-    } catch (error) {
-      console.error('Error cancelling selection:', error.message);
-      alert(`취소 실패: ${error.message}`);
+    } catch (err) {
+      console.error('Network error canceling selection:', err);
+      setError('네트워크 오류로 선택을 취소할 수 없습니다.');
     }
   };
 
-  const handleGoBack = () => {
-    router.push('/student'); // 학생 메인 페이지로 돌아가기
-  };
+
+  if (loading) return <div style={{ textAlign: 'center', marginTop: '50px' }}>로그인 정보 확인 중...</div>;
+  if (error) return <div style={{ textAlign: 'center', marginTop: '50px', color: 'red' }}>오류: {error}</div>;
 
   return (
-    <div style={{ padding: '20px', maxWidth: '400px', margin: '0 auto', textAlign: 'center' }}>
-      <h1>숫자 선택 페이지</h1>
-      <p>환영합니다, {username}!</p>
-      {currentSelection !== null && (
-        <p>현재 선택: **{currentSelection}**번</p>
+    <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', textAlign: 'center' }}>
+      <h1>번호 선택 페이지</h1>
+      <p style={{ fontSize: '1.2em', marginBottom: '20px' }}>환영합니다, <strong style={{ color: 'darkblue' }}>{username}</strong>님!</p>
+      
+      {selectedNumber !== null ? (
+        <p style={{ fontSize: '1.5em', fontWeight: 'bold', color: 'green', marginBottom: '20px' }}>
+          현재 선택 번호: {selectedNumber}
+        </p>
+      ) : (
+        <p style={{ fontSize: '1.2em', color: '#555', marginBottom: '20px' }}>
+          번호를 선택해주세요.
+        </p>
       )}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '20px' }}>
-        {[1, 2, 3, 4].map((num) => (
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px', maxWidth: '300px', margin: '0 auto 30px' }}>
+        {[1, 2, 3, 4].map((number) => (
           <button
-            key={num}
-            onClick={() => handleSelection(num)}
+            key={number}
+            onClick={() => handleSelection(number)}
             style={{
               padding: '20px',
-              fontSize: '24px',
+              fontSize: '2em',
               fontWeight: 'bold',
-              backgroundColor: currentSelection === num ? 'green' : 'blue',
+              backgroundColor: selectedNumber === number ? '#28a745' : '#007bff',
               color: 'white',
               border: 'none',
               borderRadius: '8px',
               cursor: 'pointer',
+              boxShadow: '3px 3px 8px rgba(0,0,0,0.2)',
+              transition: 'background-color 0.3s ease',
             }}
           >
-            {num}
+            {number}
           </button>
         ))}
       </div>
+
       <button
         onClick={handleCancel}
         style={{
-          marginTop: '20px',
-          padding: '15px 30px',
-          fontSize: '18px',
-          backgroundColor: 'red',
+          padding: '12px 25px',
+          fontSize: '1.1em',
+          backgroundColor: '#dc3545',
           color: 'white',
           border: 'none',
-          borderRadius: '8px',
+          borderRadius: '5px',
           cursor: 'pointer',
+          boxShadow: '2px 2px 5px rgba(0,0,0,0.1)',
+          transition: 'background-color 0.3s ease',
         }}
       >
         선택 취소
       </button>
-      <button
-        onClick={handleGoBack}
-        style={{
-          marginTop: '10px',
-          padding: '10px 20px',
-          fontSize: '16px',
-          backgroundColor: '#555',
-          color: 'white',
-          border: 'none',
-          borderRadius: '8px',
-          cursor: 'pointer',
-        }}
-      >
-        뒤로 가기
-      </button>
+
+      {/* JWT 토큰 관련 오류는 이 수정으로 해결될 것으로 예상됩니다.
+          만약 여전히 발생한다면, Supabase 연동에 필요한 RLS 정책 등을 추가 확인해야 합니다.
+      */}
     </div>
   );
 }
