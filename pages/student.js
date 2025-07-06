@@ -18,7 +18,7 @@ export default function StudentPage() {
     localStorage.removeItem('userRole');
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('username');
-    localStorage.removeItem('userId'); // userId도 로그아웃 시 삭제
+    localStorage.removeItem('userId'); // userId도 로그아웃 시 제거
     router.replace('/login');
   };
 
@@ -61,7 +61,7 @@ export default function StudentPage() {
         선택 페이지로 이동
       </button>
 
-      {/* 다른 학생 관련 기능들을 여기에 추가할 수 있습니다. */}
+      {/* 기타 학생 관련 기능 여기에 추가 */}
     </div>
   );
 }

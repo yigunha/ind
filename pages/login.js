@@ -69,12 +69,11 @@ export default function LoginPage() {
           onChange={(e) => setPassword(e.target.value)}
           disabled={loading}
         />
-        {error && <p style={{ color: 'red' }}>{error}</p>}
+        {error && <p className="error-message">{error}</p>}
         <button type="submit" disabled={loading}>
           {loading ? '로그인 중...' : '로그인'}
         </button>
       </form>
-
       <style jsx>{`
         .login-container {
           display: flex;
@@ -90,7 +89,7 @@ export default function LoginPage() {
           margin-bottom: 30px;
         }
         form {
-          background: #fff;
+          background: white;
           padding: 40px;
           border-radius: 8px;
           box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
@@ -102,7 +101,6 @@ export default function LoginPage() {
         }
         input[type='text'],
         input[type='password'] {
-          width: 100%;
           padding: 12px;
           border: 1px solid #ddd;
           border-radius: 4px;
@@ -122,8 +120,13 @@ export default function LoginPage() {
           background-color: #0056b3;
         }
         button:disabled {
-          background-color: #a0c9f1;
+          background-color: #cccccc;
           cursor: not-allowed;
+        }
+        .error-message {
+          color: red;
+          font-size: 14px;
+          text-align: center;
         }
       `}</style>
     </div>
