@@ -2,7 +2,6 @@ import formidable from 'formidable';
 import fs from 'fs';
 import path from 'path';
 
-// formidable 파서 설정 (파일 저장 경로 등)
 export const config = {
   api: {
     bodyParser: false, // formidable이 본문을 처리하므로 Next.js의 bodyParser 비활성화
@@ -21,7 +20,8 @@ export default async function handler(req, res) {
   });
 
   try {
-    await fs.promises.mkdir(form.options.uploadDir, { recursive: true }); // 디렉토리가 없으면 생성
+    // 업로드 디렉토리가 없으면 생성 (재귀적으로)
+    await fs.promises.mkdir(form.options.uploadDir, { recursive: true });
 
     form.parse(req, (err, fields, files) => {
       if (err) {
@@ -29,13 +29,13 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: 'Error parsing form data' });
       }
 
-      const excelFile = files.excel[0]; // formidable@3 이상에서는 files.fieldName이 배열입니다.
+      // 'excel'은 파일 입력 필드의 name 속성입니다.
+      // formidable@3 이상에서는 files.fieldName이 배열 형태입니다.
+      const excelFile = files.excel ? files.excel[0] : null; 
       if (!excelFile) {
         return res.status(400).json({ error: 'No Excel file uploaded.' });
       }
 
-      // 파일 처리 로직 (예: DB 저장, 내용 읽기 등)
-      // 여기서는 단순히 성공 메시지를 보냅니다.
       console.log('Upload successful:', excelFile.filepath);
 
       res.status(200).json({ message: 'Upload successful!', path: excelFile.filepath });
