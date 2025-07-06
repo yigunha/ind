@@ -1,141 +1,174 @@
 // pages/select-4send.js
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import io from 'socket.io-client';
+import Cookies from 'js-cookie';
+import { supabase } from '../utils/supabaseClient'; // Supabase 클라이언트 임포트
 
-let socket; // 소켓 인스턴스를 컴포넌트 외부에서 선언하여 여러 렌더링에서 재사용
-
-export default function Select4SendPage() {
+export default function Select4Send() {
   const router = useRouter();
-  const [selectedNumber, setSelectedNumber] = useState(null);
   const [username, setUsername] = useState('');
+  const [userId, setUserId] = useState(null);
+  const [currentSelection, setCurrentSelection] = useState(null); // 현재 선택 값 상태
 
   useEffect(() => {
-    // 사용자 이름 확인 및 설정
-    const storedUsername = localStorage.getItem('username');
-    if (storedUsername) {
-      setUsername(storedUsername);
+    const storedUsername = Cookies.get('username');
+    const storedUserId = Cookies.get('userId');
+
+    if (!storedUsername || !storedUserId) {
+      router.push('/login'); // 로그인 정보 없으면 로그인 페이지로
     } else {
-      // 사용자 이름 없으면 로그인 페이지로 리다이렉트
-      router.replace('/login');
+      setUsername(storedUsername);
+      setUserId(storedUserId);
+      // 페이지 로드 시 현재 사용자의 마지막 선택을 불러옴 (선택적)
+      fetchUserSelection(storedUserId);
+    }
+  }, [router]);
+
+  // 사용자의 마지막 선택을 불러오는 함수
+  const fetchUserSelection = async (userId) => {
+    if (!userId) return;
+    const { data, error } = await supabase
+      .from('student_number_selections')
+      .select('selected_number')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false }) // 가장 최신 선택
+      .limit(1)
+      .single(); // 단일 레코드만 가져옴
+
+    if (error && error.code !== 'PGRST116') { // PGRST116은 데이터 없을 때 발생
+      console.error('Error fetching user selection:', error.message);
+    } else if (data) {
+      setCurrentSelection(data.selected_number);
+    }
+  };
+
+  const handleSelection = async (number) => {
+    if (!userId || !username) {
+      alert('로그인 정보가 없습니다. 다시 로그인해주세요.');
+      router.push('/login');
       return;
     }
 
-    // 소켓 초기화 및 연결
-    if (!socket) {
-      socket = io(window.location.origin, {
-        path: '/api/socket', // ✨ 이 줄을 추가합니다.
-        pingInterval: 10000, // 10초마다 핑 전송 (기본 25000ms)
-        pingTimeout: 5000,   // 5초 동안 핑 응답 없으면 연결 끊음 (기본 20000ms)
-        transports: ['websocket'] // 웹소켓 전송 방식 강제
-      });
+    try {
+      // Supabase에 데이터 upsert (삽입 또는 업데이트)
+      // user_id를 기준으로 이미 존재하는 레코드가 있다면 업데이트, 없다면 삽입
+      const { data, error } = await supabase
+        .from('student_number_selections')
+        .upsert(
+          { 
+            user_id: userId, 
+            username: username, 
+            selected_number: number 
+          },
+          { 
+            onConflict: 'user_id', // user_id가 중복될 경우 업데이트
+            ignoreDuplicates: false // 중복 레코드를 무시하지 않고 업데이트 (기존 레코드의 created_at이 변경되지 않음)
+          }
+        )
+        .select(); // 업데이트된 레코드를 반환
 
-      socket.on('connect', () => {
-        console.log('Socket.IO connected from select-4send');
-        // 연결 성공 시, 현재 사용자 정보로 초기 선택 상태 전송 (선택된 숫자가 있다면)
-        if (selectedNumber !== null && username) {
-          socket.emit('studentSelection', { username, number: selectedNumber });
-        }
-      });
+      if (error) {
+        throw error;
+      }
 
-      socket.on('disconnect', () => {
-        console.log('Socket.IO disconnected from select-4send');
-      });
+      console.log('Selection updated:', data);
+      setCurrentSelection(number); // UI 업데이트
+      alert(`${number}번을 선택했습니다!`);
 
-      socket.on('connect_error', (error) => {
-        console.error('Socket.IO connection error from select-4send:', error);
-      });
-    }
-
-    // 컴포넌트 언마운트 시 소켓 연결 해제 (선택 사항, 필요에 따라)
-    // return () => {
-    //   if (socket) {
-    //     socket.disconnect();
-    //   }
-    // };
-  }, [username, router, selectedNumber]); // selectedNumber 의존성 추가
-
-  const handleSelectNumber = (number) => {
-    setSelectedNumber(number);
-    if (socket && username) {
-      socket.emit('studentSelection', { username, number });
+    } catch (error) {
+      console.error('Error updating selection:', error.message);
+      alert(`선택 실패: ${error.message}`);
     }
   };
 
-  const handleCancelSelection = () => {
-    setSelectedNumber(null);
-    if (socket && username) {
-      // 선택 취소 시 서버에 null 값 전송하여 해당 학생 정보 제거
-      socket.emit('studentSelection', { username, number: null });
+  const handleCancel = async () => {
+    if (!userId) {
+      alert('로그인 정보가 없습니다.');
+      return;
     }
+
+    try {
+      // Supabase에서 해당 user_id의 모든 선택 기록 삭제
+      const { error } = await supabase
+        .from('student_number_selections')
+        .delete()
+        .eq('user_id', userId);
+
+      if (error) {
+        throw error;
+      }
+
+      console.log('Selection cancelled for user:', userId);
+      setCurrentSelection(null); // UI 업데이트
+      alert('선택을 취소했습니다.');
+
+    } catch (error) {
+      console.error('Error cancelling selection:', error.message);
+      alert(`취소 실패: ${error.message}`);
+    }
+  };
+
+  const handleGoBack = () => {
+    router.push('/student'); // 학생 메인 페이지로 돌아가기
   };
 
   return (
-    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif', textAlign: 'center' }}>
-      <h1 style={{ color: '#333' }}>선택하기 페이지</h1>
-      <p>환영합니다, {username}님! 숫자를 선택해주세요.</p>
-
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(2, 1fr)',
-        gap: '20px',
-        maxWidth: '400px',
-        margin: '30px auto'
-      }}>
-        {[1, 2, 3, 4].map(num => (
+    <div style={{ padding: '20px', maxWidth: '400px', margin: '0 auto', textAlign: 'center' }}>
+      <h1>숫자 선택 페이지</h1>
+      <p>환영합니다, {username}!</p>
+      {currentSelection !== null && (
+        <p>현재 선택: **{currentSelection}**번</p>
+      )}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '20px' }}>
+        {[1, 2, 3, 4].map((num) => (
           <button
             key={num}
-            onClick={() => handleSelectNumber(num)}
+            onClick={() => handleSelection(num)}
             style={{
-              padding: '20px 30px',
-              fontSize: '1.5em',
-              backgroundColor: selectedNumber === num ? '#28a745' : '#007bff', // 선택 시 초록색, 평소엔 파란색
+              padding: '20px',
+              fontSize: '24px',
+              fontWeight: 'bold',
+              backgroundColor: currentSelection === num ? 'green' : 'blue',
               color: 'white',
               border: 'none',
               borderRadius: '8px',
               cursor: 'pointer',
-              boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
-              transition: 'background-color 0.3s ease'
             }}
           >
             {num}
           </button>
         ))}
       </div>
-
       <button
-        onClick={handleCancelSelection}
-        disabled={selectedNumber === null} // 선택된 숫자가 없을 때 비활성화
+        onClick={handleCancel}
         style={{
-          padding: '12px 20px',
-          fontSize: '1.1em',
-          backgroundColor: '#ffc107', // 노란색
+          marginTop: '20px',
+          padding: '15px 30px',
+          fontSize: '18px',
+          backgroundColor: 'red',
           color: 'white',
           border: 'none',
-          borderRadius: '5px',
+          borderRadius: '8px',
           cursor: 'pointer',
-          transition: 'background-color 0.3s ease',
-          opacity: selectedNumber === null ? 0.6 : 1, // 비활성화 시 투명도 조절
         }}
       >
         선택 취소
       </button>
-
-      <div style={{ marginTop: '50px' }}>
-        <button
-          onClick={() => router.back()}
-          style={{
-            padding: '10px 15px',
-            backgroundColor: '#6c757d',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-          }}
-        >
-          뒤로가기
-        </button>
-      </div>
+      <button
+        onClick={handleGoBack}
+        style={{
+          marginTop: '10px',
+          padding: '10px 20px',
+          fontSize: '16px',
+          backgroundColor: '#555',
+          color: 'white',
+          border: 'none',
+          borderRadius: '8px',
+          cursor: 'pointer',
+        }}
+      >
+        뒤로 가기
+      </button>
     </div>
   );
 }
