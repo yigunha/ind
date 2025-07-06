@@ -15,21 +15,47 @@ export default async function handler(req, res) {
 
   const uploadDir = path.join(process.cwd(), '/public/uploads');
 
-  // 폴더가 없으면 생성
+  // If the folder does not exist, create it
   if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
   }
 
-  const form = new formidable.IncomingForm();
-  form.uploadDir = uploadDir;
-  form.keepExtensions = true;
+  const form = new formidable.IncomingForm({
+    uploadDir: uploadDir,
+    keepExtensions: true,
+    // formidable v3 requires you to handle renaming manually for keeping the original name
+    filename: (name, ext, part, form) => {
+      // You can return a custom filename here if needed
+      // For example, to keep the original filename:
+      // return part.originalFilename;
+      // For now, let formidable handle the unique name generation
+      return new Date().getTime().toString() + ext;
+    }
+  });
+
 
   form.parse(req, async (err, fields, files) => {
     if (err) {
-      console.error(err);
-      return res.status(500).json({ error: '파일 업로드 실패' });
+      console.error('Error parsing the form: ', err);
+      return res.status(500).json({ error: 'File upload failed due to a parsing error.' });
     }
 
-    return res.status(200).json({ message: '업로드 성공' });
+    // Check if the file was actually uploaded
+    const uploadedFile = files.file?.[0]; // formidable v3 nests files in an array
+
+    if (!uploadedFile) {
+        return res.status(400).json({ error: 'No file was uploaded.' });
+    }
+
+    // Log the details of the uploaded file for debugging
+    console.log('File uploaded successfully:');
+    console.log('- Original name:', uploadedFile.originalFilename);
+    console.log('- New path:', uploadedFile.filepath);
+    console.log('- Size:', uploadedFile.size);
+
+    // You can now perform additional operations with the file,
+    // like reading it with a library like 'xlsx'.
+
+    return res.status(200).json({ message: 'Upload successful!', path: uploadedFile.filepath });
   });
 }

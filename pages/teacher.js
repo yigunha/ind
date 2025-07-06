@@ -25,6 +25,10 @@ export default function TeacherPage() {
     router.replace('/login');
   };
 
+  const handleGoToReceivePage = () => {
+    router.push('/select-4receive'); // select-4receive 페이지로 이동
+  };
+
   return (
     <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
       <h1 style={{ color: '#333' }}>선생님 페이지</h1>
@@ -38,10 +42,26 @@ export default function TeacherPage() {
           border: 'none',
           borderRadius: '4px',
           cursor: 'pointer',
+          marginRight: '10px', // 버튼 간격
           marginBottom: '30px'
         }}
       >
         로그아웃
+      </button>
+
+      <button
+        onClick={handleGoToReceivePage}
+        style={{
+          padding: '10px 15px',
+          backgroundColor: '#28a745', // 초록색 버튼
+          color: 'white',
+          border: 'none',
+          borderRadius: '4px',
+          cursor: 'pointer',
+          marginBottom: '30px'
+        }}
+      >
+        학생 선택 현황 보기 (select-4receive)
       </button>
 
       <hr style={{ margin: '30px 0', borderColor: '#eee' }} />
