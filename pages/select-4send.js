@@ -24,6 +24,7 @@ export default function Select4SendPage() {
     // 소켓 초기화 및 연결
     if (!socket) {
       socket = io(window.location.origin, {
+        path: '/api/socket', // ✨ 이 줄을 추가합니다.
         pingInterval: 10000, // 10초마다 핑 전송 (기본 25000ms)
         pingTimeout: 5000,   // 5초 동안 핑 응답 없으면 연결 끊음 (기본 20000ms)
         transports: ['websocket'] // 웹소켓 전송 방식 강제
@@ -39,63 +40,49 @@ export default function Select4SendPage() {
 
       socket.on('disconnect', () => {
         console.log('Socket.IO disconnected from select-4send');
-        socket = null; // 소켓 인스턴스 초기화
       });
 
       socket.on('connect_error', (error) => {
-        console.error('Socket.IO connection error:', error);
+        console.error('Socket.IO connection error from select-4send:', error);
       });
     }
 
-    // 컴포넌트 언마운트 시 소켓 연결 해제
-    return () => {
-      if (socket && socket.connected) { // 연결되어 있을 때만 disconnect 호출
-        socket.disconnect();
-        socket = null;
-        console.log('Socket.IO cleanup: disconnected from select-4send');
-      }
-    };
-  }, [router, username, selectedNumber]); // username과 selectedNumber도 의존성 배열에 추가
+    // 컴포넌트 언마운트 시 소켓 연결 해제 (선택 사항, 필요에 따라)
+    // return () => {
+    //   if (socket) {
+    //     socket.disconnect();
+    //   }
+    // };
+  }, [username, router, selectedNumber]); // selectedNumber 의존성 추가
 
-  // 숫자 선택 핸들러
   const handleSelectNumber = (number) => {
     setSelectedNumber(number);
     if (socket && username) {
       socket.emit('studentSelection', { username, number });
-      console.log(`Emitted studentSelection: ${username}, ${number}`);
-    } else {
-      console.warn("Socket not connected or username not set when trying to emit.");
     }
   };
 
-  // 선택 취소 핸들러
   const handleCancelSelection = () => {
     setSelectedNumber(null);
     if (socket && username) {
-      socket.emit('studentSelection', { username, number: null }); // null을 보내서 선택 취소 알림
-      console.log(`Emitted studentSelection: ${username}, null (cancel)`);
-    } else {
-      console.warn("Socket not connected or username not set when trying to emit (cancel).");
+      // 선택 취소 시 서버에 null 값 전송하여 해당 학생 정보 제거
+      socket.emit('studentSelection', { username, number: null });
     }
   };
 
   return (
     <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif', textAlign: 'center' }}>
-      <h1 style={{ color: '#333' }}>숫자 선택 페이지</h1>
-      <p style={{ fontSize: '1.1em', color: '#555' }}>환영합니다, <span style={{ fontWeight: 'bold' }}>{username}</span>님!</p>
+      <h1 style={{ color: '#333' }}>선택하기 페이지</h1>
+      <p>환영합니다, {username}님! 숫자를 선택해주세요.</p>
 
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(2, 1fr)',
         gap: '20px',
         maxWidth: '400px',
-        margin: '30px auto',
-        padding: '20px',
-        border: '1px solid #eee',
-        borderRadius: '8px',
-        boxShadow: '0 2px 10px rgba(0,0,0,0.05)'
+        margin: '30px auto'
       }}>
-        {[1, 2, 3, 4].map((num) => (
+        {[1, 2, 3, 4].map(num => (
           <button
             key={num}
             onClick={() => handleSelectNumber(num)}
@@ -139,14 +126,14 @@ export default function Select4SendPage() {
           onClick={() => router.back()}
           style={{
             padding: '10px 15px',
-            backgroundColor: '#6c757d', // 회색
+            backgroundColor: '#6c757d',
             color: 'white',
             border: 'none',
             borderRadius: '4px',
-            cursor: 'pointer'
+            cursor: 'pointer',
           }}
         >
-          뒤로 가기
+          뒤로가기
         </button>
       </div>
     </div>

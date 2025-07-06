@@ -14,6 +14,7 @@ export default function Select4ReceivePage() {
     // 소켓 초기화 및 연결
     if (!socket) {
       socket = io(window.location.origin, {
+        path: '/api/socket', // ✨ 이 줄을 추가합니다.
         pingInterval: 10000, // 10초마다 핑 전송
         pingTimeout: 5000,   // 5초 동안 핑 응답 없으면 연결 끊음
         transports: ['websocket'] // 웹소켓 전송 방식 강제
@@ -33,41 +34,44 @@ export default function Select4ReceivePage() {
 
       socket.on('disconnect', () => {
         console.log('Socket.IO disconnected from select-4receive');
-        socket = null; // 소켓 인스턴스 초기화
       });
 
       socket.on('connect_error', (error) => {
-        console.error('Socket.IO connection error:', error);
+        console.error('Socket.IO connection error to select-4receive:', error);
       });
     }
 
-    // 컴포넌트 언마운트 시 소켓 연결 해제
-    return () => {
-      if (socket && socket.connected) { // 연결되어 있을 때만 disconnect 호출
-        socket.disconnect();
-        socket = null;
-        console.log('Socket.IO cleanup: disconnected from select-4receive');
-      }
-    };
-  }, []); // 의존성 배열 비워 컴포넌트 마운트 시 한 번만 실행되도록 함
+    // 컴포넌트 언마운트 시 소켓 연결 해제 (선택 사항, 필요에 따라)
+    // return () => {
+    //   if (socket) {
+    //     socket.disconnect();
+    //   }
+    // };
+  }, []);
 
   return (
     <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-      <h1 style={{ color: '#333' }}>선생님 페이지 (실시간 현황)</h1>
-      <p style={{ fontSize: '1.2em' }}>
-        선택된 숫자의 총계: <span style={{ fontWeight: 'bold', color: '#007bff' }}>{totalSum}</span>
-      </p>
-      <p style={{ fontSize: '1.2em', marginBottom: '20px' }}>
-        선택한 학생 수: <span style={{ fontWeight: 'bold', color: '#28a745' }}>{studentsSelectedCount}</span>
-      </p>
+      <h1 style={{ color: '#333' }}>선택 현황 (선생님 페이지)</h1>
+      <p>총 선택된 숫자 합계: <span style={{ fontWeight: 'bold', color: '#007bff' }}>{totalSum}</span></p>
+      <p>총 선택 학생 수: <span style={{ fontWeight: 'bold', color: '#28a745' }}>{studentsSelectedCount}명</span></p>
 
-      <hr style={{ margin: '30px 0', borderColor: '#eee' }} />
-
-      {/* 각 번호별 선택 현황 추가 */}
-      <h2 style={{ color: '#555' }}>번호별 선택 현황</h2>
-      <div style={{ display: 'flex', justifyContent: 'space-around', marginBottom: '30px', border: '1px solid #eee', padding: '15px', borderRadius: '8px', backgroundColor: '#f9f9f9' }}>
+      <h2 style={{ color: '#555', marginTop: '30px' }}>번호별 선택 횟수</h2>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        gap: '15px',
+        maxWidth: '600px',
+        margin: '0 auto'
+      }}>
         {[1, 2, 3, 4].map(num => (
-          <div key={num} style={{ textAlign: 'center', minWidth: '80px' }}>
+          <div key={num} style={{
+            padding: '15px',
+            border: '1px solid #ddd',
+            borderRadius: '8px',
+            backgroundColor: '#f9f9f9',
+            textAlign: 'center',
+            minHeight: '80px'
+          }}>
             <p style={{ margin: '0', fontSize: '1.1em', fontWeight: 'bold', color: '#666' }}>번호 {num}</p>
             <p style={{ margin: '5px 0 0', fontSize: '1.8em', fontWeight: 'bold', color: '#dc3545' }}>
               {selectionCounts[num]}명
