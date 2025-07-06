@@ -6,18 +6,18 @@ export default function Select4Send() {
   const router = useRouter();
   const [username, setUsername] = useState('');
   const [userId, setUserId] = useState(null);
-  const [selectedNumber, setSelectedNumber] = useState(null); // 사용자의 현재 선택 번호
+  const [selectedNumber, setSelectedNumber] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Supabase 클라이언트 임포트는 utils/supabaseClient.js 파일이 있다고 가정합니다.
   const { supabase } = require('../utils/supabaseClient'); 
+
 
   useEffect(() => {
     const storedUsername = localStorage.getItem('username');
-    const storedUserId = localStorage.getItem('userId'); // userId도 localStorage에서 가져옴
+    const storedUserId = localStorage.getItem('userId');
 
-    if (!storedUsername || !storedUserId) { // <<<<< storedUserId가 없으면 로그인 페이지로 리다이렉트
+    if (!storedUsername || !storedUserId) {
       router.push('/login');
     } else {
       setUsername(storedUsername);
@@ -27,14 +27,13 @@ export default function Select4Send() {
     }
   }, [router]);
 
-  // 사용자의 현재 선택 번호를 불러오는 함수
   const fetchUserSelection = async (currentUserId) => {
-    if (!currentUserId) return; // userId가 유효하지 않으면 요청하지 않음
+    if (!currentUserId) return;
     try {
       const { data, error } = await supabase
         .from('student_number_selections')
         .select('selected_number')
-        .eq('user_id', currentUserId) // 올바른 userId (UUID)로 쿼리
+        .eq('user_id', currentUserId)
         .single();
 
       if (error && error.code !== 'PGRST116') {
@@ -120,6 +119,7 @@ export default function Select4Send() {
       setError('네트워크 오류로 선택을 취소할 수 없습니다.');
     }
   };
+
 
   if (loading) return <div style={{ textAlign: 'center', marginTop: '50px' }}>로그인 정보 확인 중...</div>;
   if (error) return <div style={{ textAlign: 'center', marginTop: '50px', color: 'red' }}>오류: {error}</div>;

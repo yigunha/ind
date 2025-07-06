@@ -40,7 +40,7 @@ export default async function handler(req, res) {
     { expiresIn: '1h' }
   );
 
-  // 로그인 성공 시 응답에 userId를 명시적으로 포함
+  // ★★★ 로그인 성공 시 응답에 userId를 명시적으로 포함해야 합니다. ★★★
   return res.status(200).json({
     message: '로그인 성공',
     token,
