@@ -14,33 +14,30 @@ export default function Select4Send() {
   const { supabase } = require('../utils/supabaseClient'); 
 
   useEffect(() => {
-    // localStorage에서 사용자 정보 가져오기 (사용자님의 기존 방식 유지)
     const storedUsername = localStorage.getItem('username');
     const storedUserId = localStorage.getItem('userId'); // userId도 localStorage에서 가져옴
 
     if (!storedUsername || !storedUserId) { // <<<<< storedUserId가 없으면 로그인 페이지로 리다이렉트
-      // 로그인 정보가 없으면 로그인 페이지로 이동
       router.push('/login');
     } else {
       setUsername(storedUsername);
       setUserId(storedUserId);
       setLoading(false);
-      // 페이지 로드 시 현재 사용자의 마지막 선택을 불러옴
       fetchUserSelection(storedUserId);
     }
   }, [router]);
 
   // 사용자의 현재 선택 번호를 불러오는 함수
   const fetchUserSelection = async (currentUserId) => {
-    if (!currentUserId) return;
+    if (!currentUserId) return; // userId가 유효하지 않으면 요청하지 않음
     try {
       const { data, error } = await supabase
         .from('student_number_selections')
         .select('selected_number')
-        .eq('user_id', currentUserId)
-        .single(); // 단일 레코드만 가져옴
+        .eq('user_id', currentUserId) // 올바른 userId (UUID)로 쿼리
+        .single();
 
-      if (error && error.code !== 'PGRST116') { // PGRST116은 데이터가 없을 때 발생 (데이터 없음 오류)
+      if (error && error.code !== 'PGRST116') {
         console.error('Error fetching user selection:', error.message);
         setError('선택 정보를 불러오는 데 실패했습니다.');
       } else if (data) {
@@ -58,7 +55,6 @@ export default function Select4Send() {
       return;
     }
     
-    // 이전에 선택한 기록이 있는지 확인 (업데이트 또는 삽입)
     try {
         const { data: existingSelection, error: fetchError } = await supabase
             .from('student_number_selections')
@@ -66,20 +62,18 @@ export default function Select4Send() {
             .eq('user_id', userId)
             .single();
 
-        if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116은 데이터가 없을 때 발생
+        if (fetchError && fetchError.code !== 'PGRST116') {
             throw fetchError;
         }
 
         let updateError = null;
         if (existingSelection) {
-            // 기존 선택이 있으면 업데이트
             const { error } = await supabase
                 .from('student_number_selections')
-                .update({ selected_number: number, created_at: new Date().toISOString() }) // created_at 업데이트
+                .update({ selected_number: number, created_at: new Date().toISOString() })
                 .eq('id', existingSelection.id);
             updateError = error;
         } else {
-            // 기존 선택이 없으면 새로 삽입
             const { error } = await supabase
                 .from('student_number_selections')
                 .insert([
@@ -92,9 +86,8 @@ export default function Select4Send() {
             console.error('Error updating/inserting selection:', updateError.message);
             setError(`선택 저장 실패: ${updateError.message}`);
         } else {
-            setSelectedNumber(number); // UI 업데이트
+            setSelectedNumber(number);
             alert(`${number}번을 선택했습니다!`);
-            // 성공적으로 선택했으므로 실시간으로 반영될 것임
         }
 
     } catch (err) {
@@ -119,7 +112,7 @@ export default function Select4Send() {
         console.error('Error canceling selection:', error.message);
         setError('선택 취소 실패.');
       } else {
-        setSelectedNumber(null); // UI 업데이트
+        setSelectedNumber(null);
         alert('선택을 취소했습니다.');
       }
     } catch (err) {
