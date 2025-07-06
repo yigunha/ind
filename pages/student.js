@@ -25,6 +25,10 @@ export default function StudentPage() {
     router.replace('/login');
   };
 
+  const handleGoToSelection = () => {
+    router.push('/select-4send'); // select-4send 페이지로 이동
+  };
+
   return (
     <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
       <h1 style={{ color: '#333' }}>학생 페이지</h1>
@@ -38,10 +42,26 @@ export default function StudentPage() {
           border: 'none',
           borderRadius: '4px',
           cursor: 'pointer',
+          marginRight: '10px', // 버튼 간격
           marginBottom: '30px'
         }}
       >
         로그아웃
+      </button>
+
+      <button
+        onClick={handleGoToSelection}
+        style={{
+          padding: '10px 15px',
+          backgroundColor: '#007bff', // 파란색 버튼
+          color: 'white',
+          border: 'none',
+          borderRadius: '4px',
+          cursor: 'pointer',
+          marginBottom: '30px'
+        }}
+      >
+        선택하기 (select-4send)
       </button>
 
       <hr style={{ margin: '30px 0', borderColor: '#eee' }} />
