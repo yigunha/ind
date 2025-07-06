@@ -45,14 +45,13 @@ export default function Select4Receive() {
             if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
               newSelections[payload.new.username] = payload.new.selected_number;
             } else if (payload.eventType === 'DELETE') {
-              // 삭제 이벤트의 경우, old 데이터를 사용하여 해당 사용자 제거
               delete newSelections[payload.old.username];
             }
             return newSelections;
           });
         }
       )
-      .subscribe(); // 구독 시작
+      .subscribe();
 
     // 컴포넌트 언마운트 시 구독 해제
     return () => {
@@ -82,13 +81,11 @@ export default function Select4Receive() {
               }}
             >
               <h3 style={{ margin: '0 0 10px', fontSize: '18px', color: '#333' }}>{username}</h3>
-              <p style={{ margin: '0', fontSize: '28px', fontWeight: 'bold', color: 'darkblue' }}>
-                {selections[username] !== null ? selections[username] : '선택 없음'}
-              </p>
+              <p style={{ margin: '0', fontSize: '28px', fontWeight: 'bold', color: '#007bff' }}>{selections[username]}</p>
             </div>
           ))
         ) : (
-          <p style={{ gridColumn: '1 / -1', fontSize: '18px', color: '#666' }}>아직 아무도 선택하지 않았습니다.</p>
+          <p style={{ gridColumn: '1 / -1', color: '#777' }}>아직 선택한 학생이 없습니다.</p>
         )}
       </div>
     </div>

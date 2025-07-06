@@ -69,11 +69,63 @@ export default function LoginPage() {
           onChange={(e) => setPassword(e.target.value)}
           disabled={loading}
         />
+        {error && <p style={{ color: 'red' }}>{error}</p>}
         <button type="submit" disabled={loading}>
           {loading ? '로그인 중...' : '로그인'}
         </button>
-        {error && <p className="error-text">{error}</p>}
       </form>
+
+      <style jsx>{`
+        .login-container {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          min-height: 100vh;
+          background-color: #f0f2f5;
+          font-family: Arial, sans-serif;
+        }
+        h1 {
+          color: #333;
+          margin-bottom: 30px;
+        }
+        form {
+          background: #fff;
+          padding: 40px;
+          border-radius: 8px;
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+          width: 100%;
+          max-width: 400px;
+        }
+        input[type='text'],
+        input[type='password'] {
+          width: 100%;
+          padding: 12px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          font-size: 16px;
+        }
+        button {
+          padding: 12px 20px;
+          background-color: #007bff;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          font-size: 18px;
+          cursor: pointer;
+          transition: background-color 0.3s ease;
+        }
+        button:hover:not(:disabled) {
+          background-color: #0056b3;
+        }
+        button:disabled {
+          background-color: #a0c9f1;
+          cursor: not-allowed;
+        }
+      `}</style>
     </div>
   );
 }

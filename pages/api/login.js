@@ -36,16 +36,14 @@ export default async function handler(req, res) {
   // JWT 토큰 생성 시 userId를 포함
   const token = jwt.sign(
     { userId: user.id, username: user.username, userRole: user.role },
-    process.env.JWT_SECRET,
+    process.env.JWT_SECRET, // .env.local 파일에 JWT_SECRET 변수를 설정해야 합니다.
     { expiresIn: '1h' }
   );
 
-  // ★★★ 로그인 성공 시 응답에 userId를 명시적으로 포함해야 합니다. ★★★
-  return res.status(200).json({
-    message: '로그인 성공',
+  res.status(200).json({
     token,
     userRole: user.role,
     username: user.username,
-    userId: user.id, // <<<<< 이 부분이 userId를 클라이언트로 보내는 핵심입니다!
+    userId: user.id // <<<<< 이 부분이 클라이언트로 userId를 보냅니다.
   });
 }

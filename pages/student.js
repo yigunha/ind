@@ -18,6 +18,7 @@ export default function StudentPage() {
     localStorage.removeItem('userRole');
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('username');
+    localStorage.removeItem('userId'); // userId도 로그아웃 시 삭제
     router.replace('/login');
   };
 
@@ -57,12 +58,10 @@ export default function StudentPage() {
           marginBottom: '30px'
         }}
       >
-        선택하기 (select-4send)
+        선택 페이지로 이동
       </button>
 
-      <hr style={{ margin: '30px 0', borderColor: '#eee' }} />
-
-      <p>이곳은 학생만 접근할 수 있는 페이지입니다. 여기에 학생 관련 내용을 추가하세요.</p>
+      {/* 다른 학생 관련 기능들을 여기에 추가할 수 있습니다. */}
     </div>
   );
 }
