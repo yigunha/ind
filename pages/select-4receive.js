@@ -2,18 +2,22 @@
 import { useEffect, useState } from 'react';
 import io from 'socket.io-client';
 
-let socket; // 소켓 인스턴스를 외부에 선언하여 컴포넌트 리렌더링 시에도 유지
+let socket; // 소켓 인스턴스를 컴포넌트 외부에서 선언하여 여러 렌더링에서 재사용
 
 export default function Select4ReceivePage() {
   const [totalSum, setTotalSum] = useState(0);
   const [studentsSelectedCount, setStudentsSelectedCount] = useState(0);
   const [selectedNumbersByStudent, setSelectedNumbersByStudent] = useState({});
-  const [selectionCounts, setSelectionCounts] = useState({ 1: 0, 2: 0, 3: 0, 4: 0 }); // 각 번호별 선택된 학생 수 상태
+  const [selectionCounts, setSelectionCounts] = useState({ 1: 0, 2: 0, 3: 0, 4: 0 }); // 각 번호별 선택된 학생 수를 저장할 상태 추가
 
   useEffect(() => {
-    // 소켓 초기화 (클라이언트 사이드에서만 실행되도록)
+    // 소켓 초기화 및 연결
     if (!socket) {
-      socket = io(window.location.origin);
+      socket = io(window.location.origin, {
+        pingInterval: 10000, // 10초마다 핑 전송
+        pingTimeout: 5000,   // 5초 동안 핑 응답 없으면 연결 끊음
+        transports: ['websocket'] // 웹소켓 전송 방식 강제
+      });
 
       socket.on('connect', () => {
         console.log('Socket.IO connected to select-4receive');
@@ -24,23 +28,28 @@ export default function Select4ReceivePage() {
         setTotalSum(data.totalSum);
         setStudentsSelectedCount(data.studentsSelectedCount);
         setSelectedNumbersByStudent(data.selectedNumbersByStudent);
-        setSelectionCounts(data.selectionCounts); // 각 번호별 카운트 데이터 업데이트
+        setSelectionCounts(data.selectionCounts); // 새로운 상태 업데이트
       });
 
       socket.on('disconnect', () => {
         console.log('Socket.IO disconnected from select-4receive');
+        socket = null; // 소켓 인스턴스 초기화
+      });
+
+      socket.on('connect_error', (error) => {
+        console.error('Socket.IO connection error:', error);
       });
     }
 
-    // 컴포넌트 언마운트 시 소켓 연결 해제 (클린업)
+    // 컴포넌트 언마운트 시 소켓 연결 해제
     return () => {
-      if (socket) {
+      if (socket && socket.connected) { // 연결되어 있을 때만 disconnect 호출
         socket.disconnect();
-        socket = null; // 소켓 인스턴스 초기화
-        console.log('Socket.IO disconnected from select-4receive (cleanup)');
+        socket = null;
+        console.log('Socket.IO cleanup: disconnected from select-4receive');
       }
     };
-  }, []); // 빈 배열은 컴포넌트 마운트 시 한 번만 실행됨
+  }, []); // 의존성 배열 비워 컴포넌트 마운트 시 한 번만 실행되도록 함
 
   return (
     <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
@@ -54,7 +63,7 @@ export default function Select4ReceivePage() {
 
       <hr style={{ margin: '30px 0', borderColor: '#eee' }} />
 
-      {/* 각 번호별 선택 현황 표시 섹션 */}
+      {/* 각 번호별 선택 현황 추가 */}
       <h2 style={{ color: '#555' }}>번호별 선택 현황</h2>
       <div style={{ display: 'flex', justifyContent: 'space-around', marginBottom: '30px', border: '1px solid #eee', padding: '15px', borderRadius: '8px', backgroundColor: '#f9f9f9' }}>
         {[1, 2, 3, 4].map(num => (
@@ -75,7 +84,7 @@ export default function Select4ReceivePage() {
       ) : (
         <ul style={{ listStyleType: 'none', padding: 0 }}>
           {Object.entries(selectedNumbersByStudent).map(([username, number]) => (
-            <li key={username} style={{ // 여기가 끊겼던 부분입니다.
+            <li key={username} style={{
               padding: '10px 0',
               borderBottom: '1px dotted #eee',
               display: 'flex',
@@ -85,10 +94,15 @@ export default function Select4ReceivePage() {
               <span style={{ fontWeight: 'bold' }}>{username}</span>
               <span style={{
                 backgroundColor: '#f0f0f0',
-                padding: '5px 10px',
-                borderRadius: '5px',
-                minWidth: '50px',
-                textAlign: 'center'
+                borderRadius: '50%',
+                width: '35px',
+                height: '35px',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                fontSize: '1.1em',
+                fontWeight: 'bold',
+                color: '#333'
               }}>
                 {number}
               </span>
