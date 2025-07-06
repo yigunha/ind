@@ -1,124 +1,47 @@
-<<<<<<< HEAD
 import formidable from 'formidable';
 import fs from 'fs';
 import path from 'path';
 
+// formidable 파서 설정 (파일 저장 경로 등)
 export const config = {
   api: {
-    bodyParser: false,
+    bodyParser: false, // formidable이 본문을 처리하므로 Next.js의 bodyParser 비활성화
   },
 };
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
+    return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
-  const uploadDir = path.join(process.cwd(), '/public/uploads');
+  const form = formidable({
+    uploadDir: path.join(process.cwd(), 'public/uploads'), // 파일이 저장될 경로
+    keepExtensions: true, // 원본 파일 확장자 유지
+    maxFileSize: 10 * 1024 * 1024, // 10MB 제한
+  });
 
-  // If the folder does not exist, create it
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
+  try {
+    await fs.promises.mkdir(form.options.uploadDir, { recursive: true }); // 디렉토리가 없으면 생성
+
+    form.parse(req, (err, fields, files) => {
+      if (err) {
+        console.error('Error parsing form:', err);
+        return res.status(500).json({ error: 'Error parsing form data' });
+      }
+
+      const excelFile = files.excel[0]; // formidable@3 이상에서는 files.fieldName이 배열입니다.
+      if (!excelFile) {
+        return res.status(400).json({ error: 'No Excel file uploaded.' });
+      }
+
+      // 파일 처리 로직 (예: DB 저장, 내용 읽기 등)
+      // 여기서는 단순히 성공 메시지를 보냅니다.
+      console.log('Upload successful:', excelFile.filepath);
+
+      res.status(200).json({ message: 'Upload successful!', path: excelFile.filepath });
+    });
+  } catch (error) {
+    console.error('File upload error:', error);
+    res.status(500).json({ error: 'File upload failed.' });
   }
-
-  const form = new formidable.IncomingForm({
-    uploadDir: uploadDir,
-    keepExtensions: true,
-    // formidable v3 requires you to handle renaming manually for keeping the original name
-    filename: (name, ext, part, form) => {
-      // You can return a custom filename here if needed
-      // For example, to keep the original filename:
-      // return part.originalFilename;
-      // For now, let formidable handle the unique name generation
-      return new Date().getTime().toString() + ext;
-    }
-  });
-
-
-  form.parse(req, async (err, fields, files) => {
-    if (err) {
-      console.error('Error parsing the form: ', err);
-      return res.status(500).json({ error: 'File upload failed due to a parsing error.' });
-    }
-
-    // Check if the file was actually uploaded
-    const uploadedFile = files.file?.[0]; // formidable v3 nests files in an array
-
-    if (!uploadedFile) {
-        return res.status(400).json({ error: 'No file was uploaded.' });
-    }
-
-    // Log the details of the uploaded file for debugging
-    console.log('File uploaded successfully:');
-    console.log('- Original name:', uploadedFile.originalFilename);
-    console.log('- New path:', uploadedFile.filepath);
-    console.log('- Size:', uploadedFile.size);
-
-    // You can now perform additional operations with the file,
-    // like reading it with a library like 'xlsx'.
-
-    return res.status(200).json({ message: 'Upload successful!', path: uploadedFile.filepath });
-  });
-=======
-import formidable from 'formidable';
-import fs from 'fs';
-import path from 'path';
-
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
-  }
-
-  const uploadDir = path.join(process.cwd(), '/public/uploads');
-
-  // If the folder does not exist, create it
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-  }
-
-  const form = new formidable.IncomingForm({
-    uploadDir: uploadDir,
-    keepExtensions: true,
-    // formidable v3 requires you to handle renaming manually for keeping the original name
-    filename: (name, ext, part, form) => {
-      // You can return a custom filename here if needed
-      // For example, to keep the original filename:
-      // return part.originalFilename;
-      // For now, let formidable handle the unique name generation
-      return new Date().getTime().toString() + ext;
-    }
-  });
-
-
-  form.parse(req, async (err, fields, files) => {
-    if (err) {
-      console.error('Error parsing the form: ', err);
-      return res.status(500).json({ error: 'File upload failed due to a parsing error.' });
-    }
-
-    // Check if the file was actually uploaded
-    const uploadedFile = files.file?.[0]; // formidable v3 nests files in an array
-
-    if (!uploadedFile) {
-        return res.status(400).json({ error: 'No file was uploaded.' });
-    }
-
-    // Log the details of the uploaded file for debugging
-    console.log('File uploaded successfully:');
-    console.log('- Original name:', uploadedFile.originalFilename);
-    console.log('- New path:', uploadedFile.filepath);
-    console.log('- Size:', uploadedFile.size);
-
-    // You can now perform additional operations with the file,
-    // like reading it with a library like 'xlsx'.
-
-    return res.status(200).json({ message: 'Upload successful!', path: uploadedFile.filepath });
-  });
->>>>>>> 7adfbd1c97ca611d06e414ca80d620744c064b3a
 }
