@@ -1,44 +1,14 @@
+// pages/gwan-ri-ja.js
 import { useState } from 'react';
 
 export default function GwanRiJa() {
-  const [selectedFile, setSelectedFile] = useState(null);
-
-  const handleFileChange = (e) => {
-    setSelectedFile(e.target.files[0]);
-  };
-
-  const handleUpload = async () => {
-    if (!selectedFile) {
-      alert('파일을 선택해주세요');
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append('file', selectedFile);
-
-    try {
-      const res = await fetch('/api/upload-excel', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const result = await res.json();
-
-      if (res.ok) {
-        alert('업로드 성공');
-      } else {
-        alert(`서버 오류: ${result.error}`);
-      }
-    } catch (error) {
-      alert(`서버 오류: ${error.message}`);
-    }
-  };
+  // Excel 업로드 관련 상태 및 함수 제거
 
   return (
-    <div style={{ padding: '20px' }}>
-      <h2>관리자 엑셀 업로드</h2>
-      <input type="file" accept=".xlsx" onChange={handleFileChange} />
-      <button onClick={handleUpload}>업로드</button>
+    <div style={{ padding: '20px', textAlign: 'center' }}>
+      <h2>관리자 페이지</h2>
+      <p>현재 이곳에 표시할 내용이 없습니다. 나중에 관리자 기능을 추가할 수 있습니다.</p>
+      {/* Excel 업로드 관련 UI 제거 */}
     </div>
   );
 }
