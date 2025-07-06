@@ -34,8 +34,6 @@ export default function Select4ReceivePage() {
 
     // 컴포넌트 언마운트 시 소켓 연결 해제 (클린업)
     return () => {
-      // 다른 컴포넌트에서 소켓을 재사용할 경우 disconnect하지 않도록 조건 추가
-      // 여기서는 select-4send와 별개로 동작하므로 disconnect 유지
       if (socket) {
         socket.disconnect();
         socket = null; // 소켓 인스턴스 초기화
@@ -77,7 +75,7 @@ export default function Select4ReceivePage() {
       ) : (
         <ul style={{ listStyleType: 'none', padding: 0 }}>
           {Object.entries(selectedNumbersByStudent).map(([username, number]) => (
-            <li key={username} style={{
+            <li key={username} style={{ // 여기가 끊겼던 부분입니다.
               padding: '10px 0',
               borderBottom: '1px dotted #eee',
               display: 'flex',

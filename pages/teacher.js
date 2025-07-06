@@ -1,71 +1,68 @@
-// pages/select-4receive.js
+// pages/teacher.js
 import { useEffect, useState } from 'react';
-import io from 'socket.io-client';
+import { useRouter } from 'next/router';
 
-let socket;
-
-export default function Select4ReceivePage() {
-  const [totalSum, setTotalSum] = useState(0);
-  const [studentsSelectedCount, setStudentsSelectedCount] = useState(0);
-  const [selectedNumbersByStudent, setSelectedNumbersByStudent] = useState({});
-  // 각 번호별 선택된 학생 수를 저장할 상태 추가
-  const [selectionCounts, setSelectionCounts] = useState({ 1: 0, 2: 0, 3: 0, 4: 0 }); // 새로 추가된 부분
+export default function TeacherPage() {
+  const router = useRouter();
+  const [username, setUsername] = useState(''); // 사용자 이름 표시용 상태
 
   useEffect(() => {
-    socket = io(window.location.origin);
-
-    socket.on('connect', () => {
-      console.log('Socket.IO connected to select-4receive');
-    });
-
-    socket.on('selectionUpdate', (data) => {
-      console.log('Received selection update:', data);
-      setTotalSum(data.totalSum);
-      setStudentsSelectedCount(data.studentsSelectedCount);
-      setSelectedNumbersByStudent(data.selectedNumbersByStudent);
-      setSelectionCounts(data.selectionCounts); // 새로 추가된 부분
-    });
-
-    return () => {
-      if (socket) {
-        socket.disconnect();
-        console.log('Socket.IO disconnected from select-4receive');
-      }
-    };
+    const storedUsername = localStorage.getItem('username');
+    if (storedUsername) {
+      setUsername(storedUsername);
+    }
   }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('jwt_token');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('username');
+    router.replace('/login');
+  };
+
+  const handleGoToReceivePage = () => {
+    router.push('/select-4receive'); // select-4receive 페이지로 이동
+  };
 
   return (
     <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-      <h1 style={{ color: '#333' }}>선생님 페이지 (실시간 현황)</h1>
-      <p style={{ fontSize: '1.2em' }}>
-        선택된 숫자의 총계: <span style={{ fontWeight: 'bold', color: '#007bff' }}>{totalSum}</span>
-      </p>
-      <p style={{ fontSize: '1.2em', marginBottom: '20px' }}>
-        선택한 학생 수: <span style={{ fontWeight: 'bold', color: '#28a745' }}>{studentsSelectedCount}</span>
-      </p>
+      <h1 style={{ color: '#333' }}>선생님 페이지</h1>
+      <p>환영합니다, {username || '선생님'}님!</p>
+      <button
+        onClick={handleLogout}
+        style={{
+          padding: '10px 15px',
+          backgroundColor: '#dc3545',
+          color: 'white',
+          border: 'none',
+          borderRadius: '4px',
+          cursor: 'pointer',
+          marginRight: '10px',
+          marginBottom: '30px'
+        }}
+      >
+        로그아웃
+      </button>
+
+      <button
+        onClick={handleGoToReceivePage}
+        style={{
+          padding: '10px 15px',
+          backgroundColor: '#28a745',
+          color: 'white',
+          border: 'none',
+          borderRadius: '4px',
+          cursor: 'pointer',
+          marginBottom: '30px'
+        }}
+      >
+        학생 선택 현황 보기 (select-4receive)
+      </button>
 
       <hr style={{ margin: '30px 0', borderColor: '#eee' }} />
 
-      {/* 각 번호별 선택 현황 추가 */}
-      <h2 style={{ color: '#555' }}>번호별 선택 현황</h2>
-      <div style={{ display: 'flex', justifyContent: 'space-around', marginBottom: '30px', border: '1px solid #eee', padding: '15px', borderRadius: '8px', backgroundColor: '#f9f9f9' }}>
-        {[1, 2, 3, 4].map(num => (
-          <div key={num} style={{ textAlign: 'center', minWidth: '80px' }}>
-            <p style={{ margin: '0', fontSize: '1.1em', fontWeight: 'bold', color: '#666' }}>번호 {num}</p>
-            <p style={{ margin: '5px 0 0', fontSize: '1.8em', fontWeight: 'bold', color: '#dc3545' }}>
-              {selectionCounts[num]}명
-            </p>
-          </div>
-        ))}
-      </div>
-      {/* --- 여기까지 새로 추가 --- */}
-
-      <hr style={{ margin: '30px 0', borderColor: '#eee' }} />
-
-      <h2 style={{ color: '#555' }}>각 학생별 선택 현황</h2>
-      {studentsSelectedCount === 0 ? (
-        <p>아직 선택한 학생이 없습니다.</p>
-      ) : (
-        <ul style={{ listStyleType: 'none', padding: 0 }}>
-          {Object.entries(selectedNumbersByStudent).map(([username, number]) => (
-            <li key={
+      <p>이곳은 선생님만 접근할 수 있는 페이지입니다. 여기에 선생님 관련 내용을 추가하세요.</p>
+    </div>
+  );
+}

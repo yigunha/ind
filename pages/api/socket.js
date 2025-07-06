@@ -18,6 +18,7 @@ const SocketHandler = (req, res) => {
   io.on('connection', (socket) => {
     console.log('New client connected:', socket.id);
 
+    // 새 연결 시 현재 선택 현황 전송
     emitSelectionUpdate(io);
 
     socket.on('studentSelection', (data) => {
@@ -30,24 +31,23 @@ const SocketHandler = (req, res) => {
         delete studentSelections[username]; // 해당 학생의 선택 정보 삭제
       }
 
-      emitSelectionUpdate(io);
+      emitSelectionUpdate(io); // 선택 변경 시 업데이트 전송
     });
 
     socket.on('disconnect', () => {
       console.log('Client disconnected:', socket.id);
+      emitSelectionUpdate(io); // disconnect 시에도 업데이트 전송
     });
   });
 
   res.end();
 };
 
-// --- 이 함수를 아래 코드로 교체하세요 ---
 function emitSelectionUpdate(io) {
   let totalSum = 0;
   let studentsSelectedCount = 0;
   const selectedNumbersByStudent = {};
-  // 각 번호별 선택된 학생 수를 저장할 객체 추가
-  const selectionCounts = { 1: 0, 2: 0, 3: 0, 4: 0 }; 
+  const selectionCounts = { 1: 0, 2: 0, 3: 0, 4: 0 }; // 각 번호별 선택된 학생 수를 저장할 객체
 
   for (const username in studentSelections) {
     const number = studentSelections[username];
@@ -55,7 +55,8 @@ function emitSelectionUpdate(io) {
       totalSum += number;
       studentsSelectedCount++;
       selectedNumbersByStudent[username] = number;
-      // 각 번호별 카운트 증가
+      
+      // 각 번호별 카운트 증가 (유효한 번호일 경우에만)
       if (selectionCounts[number] !== undefined) {
         selectionCounts[number]++;
       }
@@ -64,12 +65,11 @@ function emitSelectionUpdate(io) {
 
   console.log('Emitting update - Total Sum:', totalSum, 'Students Selected:', studentsSelectedCount, 'Selection Counts:', selectionCounts);
 
-  // 'selectionUpdate' 이벤트로 현황 데이터 전송 시 selectionCounts 추가
   io.emit('selectionUpdate', {
     totalSum,
     studentsSelectedCount,
     selectedNumbersByStudent,
-    selectionCounts, // 새로 추가된 부분
+    selectionCounts, // 각 번호별 카운트 데이터 포함
   });
 }
 
