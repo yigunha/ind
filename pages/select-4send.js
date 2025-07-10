@@ -10,9 +10,8 @@ export default function Select4Send() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Supabase 클라이언트 임포트는 utils/supabaseClient.js 파일이 있다고 가정합니다.
-  const { supabase } = require('../utils/supabaseClient'); 
 
+import { supabase } from '../utils/supabaseClient';
 
   useEffect(() => {
     // router가 준비될 때까지 기다립니다.
