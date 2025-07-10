@@ -94,7 +94,7 @@ export default function Select4Send() {
         // 기존 선택이 없으면 새로 삽입 (user_id 필드를 제거)
         const { error: insertErr } = await supabase
           .from('student_number_selections')
-          .insert({ username: username, selected_number: number }); // <<<<< user_id 필드 제거
+          .insert({ username: username, selected_number: number, user_id: userId });
         updateError = insertErr;
       }
 
