@@ -1,21 +1,18 @@
 // pages/select-4send.js
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import { supabase } from '../utils/supabaseClient'; // 여기로 이동!
 
 export default function Select4Send() {
   const router = useRouter();
   const [username, setUsername] = useState('');
   const [userId, setUserId] = useState(null);
-  const [selectedNumber, setSelectedNumber] = useState(null); // 사용자의 현재 선택 번호
+  const [selectedNumber, setSelectedNumber] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-
-import { supabase } from '../utils/supabaseClient';
-
   useEffect(() => {
-    // router가 준비될 때까지 기다립니다.
-    if (!router.isReady) { // <<<<< 이 조건 추가
+    if (!router.isReady) {
       return;
     }
 
@@ -26,18 +23,15 @@ import { supabase } from '../utils/supabaseClient';
     console.log("useEffect: storedUserId:", storedUserId);
 
     if (!storedUsername || !storedUserId) {
-      // 로그인 정보가 없으면 로그인 페이지로 이동
       router.push('/login');
     } else {
       setUsername(storedUsername);
       setUserId(storedUserId);
       setLoading(false);
-      // 페이지 로드 시 현재 사용자의 마지막 선택을 불러옴
       fetchUserSelection(storedUserId);
     }
-  }, [router.isReady, router]); // <<<<< 의존성 배열에 router.isReady 추가
+  }, [router.isReady, router]);
 
-  // 사용자의 현재 선택 번호를 불러오는 함수
   const fetchUserSelection = async (currentUserId) => {
     if (!currentUserId) return;
     try {
@@ -47,7 +41,7 @@ import { supabase } from '../utils/supabaseClient';
         .eq('user_id', currentUserId)
         .single();
 
-      if (error && error.code !== 'PGRST116') { // PGRST116은 데이터 없음 에러 코드
+      if (error && error.code !== 'PGRST116') {
         console.error('Error fetching user selection:', error.message);
         setError('선택 정보를 불러오는 데 실패했습니다.');
       } else if (data) {
@@ -60,7 +54,7 @@ import { supabase } from '../utils/supabaseClient';
   };
 
   const handleSelection = async (number) => {
-    if (!userId) { // userId가 없으면 함수 실행 중단 (로그인 정보 없음)
+    if (!userId) {
       setError('로그인 정보가 없습니다. 다시 로그인해주세요.');
       router.push('/login');
       return;
@@ -69,28 +63,25 @@ import { supabase } from '../utils/supabaseClient';
     setError(null);
 
     try {
-      // 먼저 기존 선택이 있는지 확인
       const { data: existingSelection, error: fetchErr } = await supabase
         .from('student_number_selections')
         .select('id')
         .eq('user_id', userId)
         .single();
 
-      if (fetchErr && fetchErr.code !== 'PGRST116') { // PGRST116은 데이터 없음 에러 코드
+      if (fetchErr && fetchErr.code !== 'PGRST116') {
         throw new Error(`기존 선택 불러오기 실패: ${fetchErr.message}`);
       }
 
       let updateError = null;
       if (existingSelection) {
-        // 기존 선택이 있으면 업데이트
         const { error: updateErr } = await supabase
           .from('student_number_selections')
           .update({ selected_number: number })
           .eq('user_id', userId)
-          .eq('id', existingSelection.id); // 해당 user_id와 id를 가진 로우만 업데이트
+          .eq('id', existingSelection.id);
         updateError = updateErr;
       } else {
-        // 기존 선택이 없으면 새로 삽입 (user_id 필드를 제거)
         const { error: insertErr } = await supabase
           .from('student_number_selections')
           .insert({ username: username, selected_number: number, user_id: userId });
@@ -113,7 +104,7 @@ import { supabase } from '../utils/supabaseClient';
   };
 
   const handleCancel = () => {
-    router.push('/student'); // 학생 페이지로 돌아가기
+    router.push('/student');
   };
 
   if (loading) {
