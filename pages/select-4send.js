@@ -48,7 +48,7 @@ export default function Select4Send() {
         .from('student_number_selections')
         .select('selected_number')
         .eq('user_id', currentUserId)
-        .single();
+	.maybeSingle();
 
       if (error) {
         if (error.code === 'PGRST116') {
