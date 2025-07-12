@@ -79,7 +79,7 @@ export default function LoginPage() {
           display: flex;
           flex-direction: column;
           align-items: center;
-          padding-top: 10vh;
+          min-height: 10vh;
           background-color: #f0f2f5;
           font-family: Arial, sans-serif;
         }
