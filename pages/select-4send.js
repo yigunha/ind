@@ -38,6 +38,30 @@ export default function Select4Send() {
     }
   }, [router.isReady]);
 
+  // Add a new useEffect for Supabase Realtime subscription
+  useEffect(() => {
+    if (!supabase) return; // Ensure supabase client is available
+
+    const channel = supabase
+      .channel('student_selections_send_changes') // A unique channel name for this component
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'student_number_selections' },
+        (payload) => {
+          console.log('Realtime Delete Change received in send!', payload);
+          // When a delete event occurs, clear the selected number for this user
+          // This assumes that if a delete happens, it means all data is reset.
+          // For more granular control, you might check payload.old.user_id if available and necessary.
+          setSelectedNumber(null);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []); // Run once on mount to set up the subscription
+
   const fetchUserSelection = async (currentUserId) => {
     if (!currentUserId) return;
     
