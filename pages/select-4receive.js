@@ -59,6 +59,28 @@ export default function Select4Receive() {
     };
   }, []); // 빈 배열: 마운트 시 한 번만 실행
 
+  // 데이터 초기화 핸들러
+  const handleResetData = async () => {
+    if (!window.confirm('정말로 모든 데이터를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await supabase
+      .from('student_number_selections')
+      .delete()
+      .neq('username', 'non_existent_user'); // 모든 행을 삭제하기 위한 조건 (항상 참)
+
+    if (error) {
+      console.error('Error resetting data:', error.message);
+      setError('데이터 초기화에 실패했습니다.');
+    } else {
+      setSelections({}); // 성공적으로 삭제되면 로컬 상태도 초기화
+      console.log('All data reset successfully!');
+    }
+    setLoading(false);
+  };
+
   if (loading) return <div style={{ textAlign: 'center', marginTop: '50px' }}>데이터 로딩 중...</div>;
   if (error) return <div style={{ textAlign: 'center', marginTop: '50px', color: 'red' }}>오류: {error}</div>;
 
@@ -67,26 +89,48 @@ export default function Select4Receive() {
   return (
     <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
       <h1>선택 현황판 (선생님 페이지)</h1>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '15px', marginTop: '30px' }}>
-        {sortedUsernames.length > 0 ? (
-          sortedUsernames.map((username) => (
-            <div
-              key={username}
-              style={{
-                border: '1px solid #ccc',
-                borderRadius: '8px',
-                padding: '15px',
-                backgroundColor: '#f9f9f9',
-                boxShadow: '2px 2px 5px rgba(0,0,0,0.1)',
-              }}
-            >
-              <h3 style={{ margin: '0 0 10px', fontSize: '18px', color: '#333' }}>{username}</h3>
-              <p style={{ margin: '0', fontSize: '28px', fontWeight: 'bold', color: '#007bff' }}>{selections[username]}</p>
-            </div>
-          ))
-        ) : (
-          <p style={{ gridColumn: '1 / -1', color: '#777' }}>아직 선택한 학생이 없습니다.</p>
-        )}
+
+      {/* 데이터 초기화 버튼 */}
+      <button
+        onClick={handleResetData}
+        style={{
+          marginTop: '20px',
+          padding: '10px 20px',
+          backgroundColor: '#dc3545', // 빨간색
+          color: 'white',
+          border: 'none',
+          borderRadius: '5px',
+          cursor: 'pointer',
+          fontSize: '16px',
+        }}
+      >
+        데이터 초기화
+      </button>
+
+      {/* 표 형태로 데이터 표시 */}
+      <div style={{ marginTop: '30px', border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr style={{ backgroundColor: '#f2f2f2' }}>
+              <th style={{ padding: '12px 15px', borderBottom: '1px solid #ddd', textAlign: 'left' }}>username</th>
+              <th style={{ padding: '12px 15px', borderBottom: '1px solid #ddd', textAlign: 'left' }}>정답</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortedUsernames.length > 0 ? (
+              sortedUsernames.map((username) => (
+                <tr key={username} style={{ borderBottom: '1px solid #eee' }}>
+                  <td style={{ padding: '10px 15px', textAlign: 'left' }}>{username}</td>
+                  <td style={{ padding: '10px 15px', textAlign: 'left' }}>{selections[username]}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="2" style={{ padding: '10px 15px', textAlign: 'center', color: '#777' }}>아직 선택한 학생이 없습니다.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
