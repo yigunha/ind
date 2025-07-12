@@ -7,7 +7,7 @@ export default function Select4Send() {
   const router = useRouter();
   const [username, setUsername] = useState('');
   const [userId, setUserId] = useState(null);
-  const [selectedNumber, setSelectedNumber] = useState(null); // 학생이 선택한 번호
+  const [selectedNumber, setSelectedNumber] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -19,7 +19,7 @@ export default function Select4Send() {
       return;
     }
 
-    // 클라이언트 사이드에서만 localStorage 접근 및 사용자 정보 설정
+    // 클라이언트 사이드에서만 localStorage 접근
     if (typeof window !== 'undefined' && router.isReady) {
       const storedUsername = localStorage.getItem('username');
       const storedUserId = localStorage.getItem('userId');
@@ -32,85 +32,42 @@ export default function Select4Send() {
       } else {
         setUsername(storedUsername);
         setUserId(storedUserId);
-        fetchUserSelection(storedUserId); // 사용자의 기존 선택 불러오기
+        setLoading(false);
+        fetchUserSelection(storedUserId);
       }
     }
+  }, [router.isReady]);
 
-    // --- Realtime 구독 설정: 선생님 페이지에서 초기화 시 학생 페이지도 초기화 ---
-    const channel = supabase
-      .channel('student_selections_changes') // 선생님 페이지와 동일한 채널 이름
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'student_number_selections' },
-        (payload) => {
-          console.log('Realtime Change received in student page!', payload);
-
-          // DELETE 이벤트가 발생했을 때 현재 사용자의 선택 번호를 초기화
-          if (payload.eventType === 'DELETE') {
-            // payload.old가 비어있으면 전체 삭제로 간주 (선생님 페이지의 delete().neq(...) 로직)
-            // 또는 특정 user_id 데이터가 삭제되었을 때
-            if (!payload.old || (payload.old.user_id && payload.old.user_id === userId) || Object.keys(payload.old).length === 0) {
-              console.log('My selection is being reset due to delete event.');
-              setSelectedNumber(null); // 선택 번호 초기화 (핵심: 버튼 재활성화)
-            }
-          } else if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-            // 자신의 데이터가 업데이트될 경우를 대비하여 처리 (다른 학생의 선택은 영향 없음)
-            if (payload.new.user_id === userId) {
-                setSelectedNumber(payload.new.selected_number);
-            }
-          }
-        }
-      )
-      .subscribe();
-
-    // 컴포넌트 언마운트 시 구독 해제
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [router.isReady, userId]); // userId 의존성 추가
-
-  // 사용자의 기존 선택 번호 불러오기
   const fetchUserSelection = async (currentUserId) => {
-    if (!currentUserId) {
-        setLoading(false); // userId가 없으면 로딩 상태 해제
-        return;
-    }
+    if (!currentUserId) return;
     
     try {
       console.log("Fetching selection for user:", currentUserId);
+      
       const { data, error } = await supabase
         .from('student_number_selections')
         .select('selected_number')
         .eq('user_id', currentUserId)
-        .maybeSingle(); // 단일 결과를 기대하거나 없는 경우 null 반환
+	.maybeSingle();
 
       if (error) {
-        if (error.code === 'PGRST116') { // PostgreSQL No rows found (선택된 데이터가 없음)
-          console.log("No existing selection found for this user.");
+        if (error.code === 'PGRST116') {
+          console.log("No existing selection found");
         } else {
           console.error('Error fetching user selection:', error);
           setError(`선택 정보를 불러오는 데 실패했습니다: ${error.message}`);
         }
       } else if (data) {
         console.log("Found existing selection:", data.selected_number);
-        setSelectedNumber(data.selected_number); // 기존 선택 불러와서 상태 업데이트
+        setSelectedNumber(data.selected_number);
       }
     } catch (err) {
       console.error('선택 정보를 불러오는 중 오류:', err);
       setError(err.message || '선택 정보를 불러오는 데 실패했습니다.');
-    } finally {
-      setLoading(false); // 최종 로딩 상태 해제
     }
   };
 
-  // 번호 선택 및 Supabase 저장 핸들러
   const handleSelection = async (number) => {
-    // 요청: 이미 번호가 선택되어 있거나, 데이터 처리 중일 경우, 추가 선택을 막음
-    if (selectedNumber !== null || loading) {
-      console.log("Selection blocked: A number is already selected or loading. Current selected:", selectedNumber);
-      return; // 여기서 함수 실행을 중단하여 다른 버튼을 눌러도 선택이 변경되지 않게 함
-    }
-
     if (!checkSupabaseConfig()) {
       setError('Supabase 설정이 올바르지 않습니다.');
       return;
@@ -122,33 +79,54 @@ export default function Select4Send() {
       return;
     }
 
-    setLoading(true); // 데이터 저장 시작 시 로딩 상태 설정
+    setLoading(true);
     setError(null);
 
     try {
       console.log("Attempting to save selection:", number, "for user:", userId);
-      // upsert를 사용하여 user_id가 존재하면 업데이트, 없으면 삽입
-      // 이 로직은 student_number_selections 테이블의 user_id 컬럼에 UNIQUE 제약 조건이 필요합니다.
-      const { data, error: upsertError } = await supabase
-        .from('student_number_selections')
-        .upsert(
-          { username: username, selected_number: number, user_id: userId },
-          { onConflict: 'user_id' } // 'user_id'를 기준으로 충돌 감지 및 업데이트
-        );
 
-      if (upsertError) {
-        console.error('데이터 저장 실패:', upsertError);
-        setError(`선택 저장 실패: ${upsertError.message}`);
+      const { data: existingSelection, error: fetchErr } = await supabase
+        .from('student_number_selections')
+        .select('id')
+        .eq('user_id', userId)
+        .single();
+
+      if (fetchErr && fetchErr.code !== 'PGRST116') {
+        throw new Error(`기존 선택 불러오기 실패: ${fetchErr.message}`);
+      }
+
+      let result;
+      if (existingSelection) {
+        console.log("Updating existing selection");
+        result = await supabase
+          .from('student_number_selections')
+          .update({ selected_number: number })
+          .eq('user_id', userId)
+          .eq('id', existingSelection.id);
+      } else {
+        console.log("Inserting new selection");
+        result = await supabase
+          .from('student_number_selections')
+          .insert({ 
+            username: username, 
+            selected_number: number, 
+            user_id: userId 
+          });
+      }
+
+      if (result.error) {
+        console.error('데이터 저장 실패:', result.error);
+        setError(`선택 저장 실패: ${result.error.message}`);
       } else {
         console.log("Selection saved successfully");
-        setSelectedNumber(number); // 성공 시 UI에 선택된 번호 반영
+        setSelectedNumber(number);
         alert('번호가 성공적으로 저장되었습니다!');
       }
     } catch (err) {
       console.error('선택 처리 중 오류:', err);
       setError(err.message || '번호 선택 중 오류가 발생했습니다.');
     } finally {
-      setLoading(false); // 데이터 저장 완료 후 로딩 상태 해제
+      setLoading(false);
     }
   };
 
@@ -156,7 +134,6 @@ export default function Select4Send() {
     router.push('/student');
   };
 
-  // 로딩, 오류, UI 렌더링 로직
   if (typeof window === 'undefined') {
     return <div style={{ textAlign: 'center', marginTop: '50px', fontSize: '1.2em' }}>로딩 중...</div>;
   }
@@ -170,8 +147,8 @@ export default function Select4Send() {
       <div style={{ textAlign: 'center', marginTop: '50px', color: 'red', fontSize: '1.2em' }}>
         오류: {error}
         <br />
-        <button
-          onClick={() => window.location.reload()}
+        <button 
+          onClick={() => window.location.reload()} 
           style={{ marginTop: '10px', padding: '10px 20px', fontSize: '1em' }}
         >
           다시 시도
@@ -199,21 +176,19 @@ export default function Select4Send() {
           <button
             key={number}
             onClick={() => handleSelection(number)}
-            // 핵심: selectedNumber가 null이 아니거나 로딩 중일 때 버튼 비활성화
-            // 이렇게 하면 한 번 선택하면 초기화되기 전까지 다른 번호를 선택할 수 없습니다.
-            disabled={selectedNumber !== null || loading}
+            disabled={loading}
             style={{
               padding: '20px',
               fontSize: '2em',
               fontWeight: 'bold',
-              backgroundColor: selectedNumber === number ? '#28a745' : '#007bff', // 선택된 번호는 다른 색
+              backgroundColor: selectedNumber === number ? '#28a745' : '#007bff',
               color: 'white',
               border: 'none',
               borderRadius: '8px',
-              cursor: (selectedNumber !== null || loading) ? 'not-allowed' : 'pointer', // 비활성화 시 마우스 커서 변경
+              cursor: loading ? 'not-allowed' : 'pointer',
               boxShadow: '3px 3px 8px rgba(0,0,0,0.2)',
               transition: 'background-color 0.3s ease',
-              opacity: (selectedNumber !== null || loading) ? 0.6 : 1, // 비활성화 시 투명도 조절
+              opacity: loading ? 0.6 : 1,
             }}
           >
             {number}
