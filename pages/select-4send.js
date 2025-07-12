@@ -33,22 +33,55 @@ export default function Select4Send() {
         setUsername(storedUsername);
         setUserId(storedUserId);
         setLoading(false);
-        fetchUserSelection(storedUserId);
+        fetchUserSelection(storedUserId); // 사용자의 기존 선택 불러오기
       }
     }
-  }, [router.isReady]);
+
+    // --- Realtime 구독 설정 추가 (핵심 변경 부분) ---
+    const channel = supabase
+      .channel('student_selections_changes') // 선생님 페이지와 동일한 채널 이름
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'student_number_selections' },
+        (payload) => {
+          console.log('Realtime Change received in student page!', payload);
+
+          // DELETE 이벤트가 발생했을 때 현재 사용자의 선택 번호를 초기화
+          if (payload.eventType === 'DELETE') {
+            // 삭제된 데이터가 현재 사용자의 데이터이거나, 모든 데이터가 삭제되는 경우 (전체 초기화)
+            // 'neq('username', 'non_existent_user')' 로 전체 삭제 시 payload.old가 비어있을 수 있음
+            if (!payload.old || payload.old.user_id === userId || Object.keys(payload.old).length === 0) {
+              console.log('My selection is being reset due to delete event.');
+              setSelectedNumber(null); // 선택 초기화
+            }
+          } else if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            // 다른 사용자가 선택/업데이트했을 때 현재 사용자의 UI에는 직접적인 영향이 없지만
+            // 만약 자신의 데이터가 업데이트된 경우를 처리할 수도 있습니다.
+            if (payload.new.user_id === userId) {
+              setSelectedNumber(payload.new.selected_number);
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    // 컴포넌트 언마운트 시 구독 해제
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [router.isReady, userId]); // userId를 의존성 배열에 추가하여 userId가 설정된 후 Realtime 구독이 올바르게 작동하도록 함
 
   const fetchUserSelection = async (currentUserId) => {
     if (!currentUserId) return;
-    
+
     try {
       console.log("Fetching selection for user:", currentUserId);
-      
+
       const { data, error } = await supabase
         .from('student_number_selections')
         .select('selected_number')
         .eq('user_id', currentUserId)
-	.maybeSingle();
+        .maybeSingle();
 
       if (error) {
         if (error.code === 'PGRST116') {
@@ -64,6 +97,8 @@ export default function Select4Send() {
     } catch (err) {
       console.error('선택 정보를 불러오는 중 오류:', err);
       setError(err.message || '선택 정보를 불러오는 데 실패했습니다.');
+    } finally {
+      setLoading(false); // 초기 로딩 상태 여기서 해제
     }
   };
 
@@ -85,38 +120,17 @@ export default function Select4Send() {
     try {
       console.log("Attempting to save selection:", number, "for user:", userId);
 
-      const { data: existingSelection, error: fetchErr } = await supabase
+      // Upsert를 사용하여 기존 데이터가 있으면 업데이트, 없으면 삽입
+      const { data, error: upsertError } = await supabase
         .from('student_number_selections')
-        .select('id')
-        .eq('user_id', userId)
-        .single();
+        .upsert(
+          { username: username, selected_number: number, user_id: userId },
+          { onConflict: 'user_id' } // 'user_id' 컬럼을 기준으로 충돌 감지 및 업데이트
+        );
 
-      if (fetchErr && fetchErr.code !== 'PGRST116') {
-        throw new Error(`기존 선택 불러오기 실패: ${fetchErr.message}`);
-      }
-
-      let result;
-      if (existingSelection) {
-        console.log("Updating existing selection");
-        result = await supabase
-          .from('student_number_selections')
-          .update({ selected_number: number })
-          .eq('user_id', userId)
-          .eq('id', existingSelection.id);
-      } else {
-        console.log("Inserting new selection");
-        result = await supabase
-          .from('student_number_selections')
-          .insert({ 
-            username: username, 
-            selected_number: number, 
-            user_id: userId 
-          });
-      }
-
-      if (result.error) {
-        console.error('데이터 저장 실패:', result.error);
-        setError(`선택 저장 실패: ${result.error.message}`);
+      if (upsertError) {
+        console.error('데이터 저장 실패:', upsertError);
+        setError(`선택 저장 실패: ${upsertError.message}`);
       } else {
         console.log("Selection saved successfully");
         setSelectedNumber(number);
@@ -147,8 +161,8 @@ export default function Select4Send() {
       <div style={{ textAlign: 'center', marginTop: '50px', color: 'red', fontSize: '1.2em' }}>
         오류: {error}
         <br />
-        <button 
-          onClick={() => window.location.reload()} 
+        <button
+          onClick={() => window.location.reload()}
           style={{ marginTop: '10px', padding: '10px 20px', fontSize: '1em' }}
         >
           다시 시도
@@ -176,7 +190,8 @@ export default function Select4Send() {
           <button
             key={number}
             onClick={() => handleSelection(number)}
-            disabled={loading}
+            // 이미 선택된 번호가 있거나 로딩 중일 때 버튼 비활성화
+            disabled={selectedNumber !== null || loading}
             style={{
               padding: '20px',
               fontSize: '2em',
@@ -185,10 +200,10 @@ export default function Select4Send() {
               color: 'white',
               border: 'none',
               borderRadius: '8px',
-              cursor: loading ? 'not-allowed' : 'pointer',
+              cursor: (selectedNumber !== null || loading) ? 'not-allowed' : 'pointer',
               boxShadow: '3px 3px 8px rgba(0,0,0,0.2)',
               transition: 'background-color 0.3s ease',
-              opacity: loading ? 0.6 : 1,
+              opacity: (selectedNumber !== null || loading) ? 0.6 : 1,
             }}
           >
             {number}
