@@ -87,8 +87,8 @@ export default function LoginPage() {
           margin-bottom: 30px;
         }
         form {
-          background: white;
-          padding: 40px;
+          background: red; //white;
+          //padding: 40px;
           border-radius: 8px;
           box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
           display: flex;
