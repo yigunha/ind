@@ -1,7 +1,7 @@
 // pages/select-4send.js
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { supabase } from '../utils/supabaseClient'; // 여기로 이동!
+import { supabase, checkSupabaseConfig } from '../utils/supabaseClient';
 
 export default function Select4Send() {
   const router = useRouter();
@@ -12,39 +12,53 @@ export default function Select4Send() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!router.isReady) {
+    // 환경 변수 확인
+    if (!checkSupabaseConfig()) {
+      setError('Supabase 설정이 올바르지 않습니다. 환경 변수를 확인해주세요.');
+      setLoading(false);
       return;
     }
 
-    const storedUsername = localStorage.getItem('username');
-    const storedUserId = localStorage.getItem('userId');
+    // 클라이언트 사이드에서만 localStorage 접근
+    if (typeof window !== 'undefined' && router.isReady) {
+      const storedUsername = localStorage.getItem('username');
+      const storedUserId = localStorage.getItem('userId');
 
-    console.log("useEffect: storedUsername:", storedUsername);
-    console.log("useEffect: storedUserId:", storedUserId);
+      console.log("useEffect: storedUsername:", storedUsername);
+      console.log("useEffect: storedUserId:", storedUserId);
 
-    if (!storedUsername || !storedUserId) {
-      router.push('/login');
-    } else {
-      setUsername(storedUsername);
-      setUserId(storedUserId);
-      setLoading(false);
-      fetchUserSelection(storedUserId);
+      if (!storedUsername || !storedUserId) {
+        router.push('/login');
+      } else {
+        setUsername(storedUsername);
+        setUserId(storedUserId);
+        setLoading(false);
+        fetchUserSelection(storedUserId);
+      }
     }
-  }, [router.isReady, router]);
+  }, [router.isReady]);
 
   const fetchUserSelection = async (currentUserId) => {
     if (!currentUserId) return;
+    
     try {
+      console.log("Fetching selection for user:", currentUserId);
+      
       const { data, error } = await supabase
         .from('student_number_selections')
         .select('selected_number')
         .eq('user_id', currentUserId)
         .single();
 
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching user selection:', error.message);
-        setError('선택 정보를 불러오는 데 실패했습니다.');
+      if (error) {
+        if (error.code === 'PGRST116') {
+          console.log("No existing selection found");
+        } else {
+          console.error('Error fetching user selection:', error);
+          setError(`선택 정보를 불러오는 데 실패했습니다: ${error.message}`);
+        }
       } else if (data) {
+        console.log("Found existing selection:", data.selected_number);
         setSelectedNumber(data.selected_number);
       }
     } catch (err) {
@@ -54,15 +68,23 @@ export default function Select4Send() {
   };
 
   const handleSelection = async (number) => {
+    if (!checkSupabaseConfig()) {
+      setError('Supabase 설정이 올바르지 않습니다.');
+      return;
+    }
+
     if (!userId) {
       setError('로그인 정보가 없습니다. 다시 로그인해주세요.');
       router.push('/login');
       return;
     }
+
     setLoading(true);
     setError(null);
 
     try {
+      console.log("Attempting to save selection:", number, "for user:", userId);
+
       const { data: existingSelection, error: fetchErr } = await supabase
         .from('student_number_selections')
         .select('id')
@@ -73,25 +95,30 @@ export default function Select4Send() {
         throw new Error(`기존 선택 불러오기 실패: ${fetchErr.message}`);
       }
 
-      let updateError = null;
+      let result;
       if (existingSelection) {
-        const { error: updateErr } = await supabase
+        console.log("Updating existing selection");
+        result = await supabase
           .from('student_number_selections')
           .update({ selected_number: number })
           .eq('user_id', userId)
           .eq('id', existingSelection.id);
-        updateError = updateErr;
       } else {
-        const { error: insertErr } = await supabase
+        console.log("Inserting new selection");
+        result = await supabase
           .from('student_number_selections')
-          .insert({ username: username, selected_number: number, user_id: userId });
-        updateError = insertErr;
+          .insert({ 
+            username: username, 
+            selected_number: number, 
+            user_id: userId 
+          });
       }
 
-      if (updateError) {
-        console.error('데이터 저장 실패:', updateError);
-        setError(`선택 저장 실패: ${updateError.message}`);
+      if (result.error) {
+        console.error('데이터 저장 실패:', result.error);
+        setError(`선택 저장 실패: ${result.error.message}`);
       } else {
+        console.log("Selection saved successfully");
         setSelectedNumber(number);
         alert('번호가 성공적으로 저장되었습니다!');
       }
@@ -107,12 +134,27 @@ export default function Select4Send() {
     router.push('/student');
   };
 
+  if (typeof window === 'undefined') {
+    return <div style={{ textAlign: 'center', marginTop: '50px', fontSize: '1.2em' }}>로딩 중...</div>;
+  }
+
   if (loading) {
     return <div style={{ textAlign: 'center', marginTop: '50px', fontSize: '1.2em' }}>로딩 중...</div>;
   }
 
   if (error) {
-    return <div style={{ textAlign: 'center', marginTop: '50px', color: 'red', fontSize: '1.2em' }}>오류: {error}</div>;
+    return (
+      <div style={{ textAlign: 'center', marginTop: '50px', color: 'red', fontSize: '1.2em' }}>
+        오류: {error}
+        <br />
+        <button 
+          onClick={() => window.location.reload()} 
+          style={{ marginTop: '10px', padding: '10px 20px', fontSize: '1em' }}
+        >
+          다시 시도
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -134,6 +176,7 @@ export default function Select4Send() {
           <button
             key={number}
             onClick={() => handleSelection(number)}
+            disabled={loading}
             style={{
               padding: '20px',
               fontSize: '2em',
@@ -142,9 +185,10 @@ export default function Select4Send() {
               color: 'white',
               border: 'none',
               borderRadius: '8px',
-              cursor: 'pointer',
+              cursor: loading ? 'not-allowed' : 'pointer',
               boxShadow: '3px 3px 8px rgba(0,0,0,0.2)',
               transition: 'background-color 0.3s ease',
+              opacity: loading ? 0.6 : 1,
             }}
           >
             {number}
