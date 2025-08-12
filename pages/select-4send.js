@@ -144,7 +144,7 @@ export default function Select4Send() {
       } else {
         console.log("Selection saved successfully");
         setSelectedNumber(number);
-        alert('번호가 성공적으로 저장되었습니다!');
+        // alert('번호가 성공적으로 저장되었습니다!');
       }
     } catch (err) {
       console.error('선택 처리 중 오류:', err);
