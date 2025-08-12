@@ -134,7 +134,7 @@ export default function Select4Send() {
           .insert({ 
             username: username, 
             selected_number: number, 
-            // user_id: userId 
+            user_id: userId 
           });
       }
 
@@ -195,30 +195,39 @@ export default function Select4Send() {
         </p>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px', maxWidth: '300px', margin: '0 auto 30px' }}>
-        {[1, 2, 3, 4].map((number) => (
-          <button
-            key={number}
-            onClick={() => handleSelection(number)}
-            disabled={loading}
-            style={{
-              padding: '20px',
-              fontSize: '2em',
-              fontWeight: 'bold',
-              backgroundColor: selectedNumber === number ? '#28a745' : '#007bff',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              boxShadow: '3px 3px 8px rgba(0,0,0,0.2)',
-              transition: 'background-color 0.3s ease',
-              opacity: loading ? 0.6 : 1,
-            }}
-          >
-            {number}
-          </button>
-        ))}
-      </div>
+<div 
+  style={{
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, 1fr)', // 가로에 4개씩
+    gap: '15px',
+    maxWidth: '400px',
+    margin: '0 auto 30px',
+  }}
+>
+  {Array.from({ length: 12 }, (_, i) => i + 1).map((number) => (
+    <button
+      key={number}
+      onClick={() => handleSelection(number)}
+      disabled={loading}
+      style={{
+        padding: '20px',
+        fontSize: '2em',
+        fontWeight: 'bold',
+        backgroundColor: selectedNumber === number ? '#28a745' : '#007bff',
+        color: 'white',
+        border: 'none',
+        borderRadius: '8px',
+        cursor: loading ? 'not-allowed' : 'pointer',
+        boxShadow: '3px 3px 8px rgba(0, 0, 0, 0.2)',
+        transition: 'background-color 0.3s ease',
+        opacity: loading ? 0.6 : 1,
+      }}
+    >
+      {number}
+    </button>
+  ))}
+</div>
+
 
       <button
         onClick={handleCancel}
