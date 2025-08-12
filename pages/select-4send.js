@@ -134,7 +134,7 @@ export default function Select4Send() {
           .insert({ 
             username: username, 
             selected_number: number, 
-            user_id: userId 
+            // user_id: userId 
           });
       }
 
