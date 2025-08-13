@@ -19,22 +19,22 @@ export default function Select4Send() {
       return;
     }
 
-    const fetchUser = async () => {
-      // Supabase Auth에서 직접 현재 로그인된 사용자 정보 가져오기
-      const { data: { user } } = await supabase.auth.getUser();
+    // 클라이언트 사이드에서만 localStorage 접근
+    if (typeof window !== 'undefined' && router.isReady) {
+      const storedUsername = localStorage.getItem('username');
+      const storedUserId = localStorage.getItem('userId');
 
-      if (!user) {
+      console.log("useEffect: storedUsername:", storedUsername);
+      console.log("useEffect: storedUserId:", storedUserId);
+
+      if (!storedUsername || !storedUserId) {
         router.push('/login');
       } else {
-        setUsername(user.email); // user 객체에서 이메일 또는 다른 메타데이터를 가져옵니다.
-        setUserId(user.id);
+        setUsername(storedUsername);
+        setUserId(storedUserId);
         setLoading(false);
-        fetchUserSelection(user.id);
+        fetchUserSelection(storedUserId);
       }
-    };
-
-    if (typeof window !== 'undefined' && router.isReady) {
-      fetchUser();
     }
   }, [router.isReady]);
 
@@ -49,6 +49,9 @@ export default function Select4Send() {
         { event: 'DELETE', schema: 'public', table: 'student_number_selections' },
         (payload) => {
           console.log('Realtime Delete Change received in send!', payload);
+          // When a delete event occurs, clear the selected number for this user
+          // This assumes that if a delete happens, it means all data is reset.
+          // For more granular control, you might check payload.old.user_id if available and necessary.
           setSelectedNumber(null);
         }
       )

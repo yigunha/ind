@@ -1,41 +1,30 @@
 // pages/student.js
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { supabase } from '../utils/supabaseClient'; // supabase 클라이언트 import
 
 export default function StudentPage() {
   const router = useRouter();
   const [username, setUsername] = useState(''); // 사용자 이름 표시용 상태
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        // 사용자가 로그인되어 있지 않으면 로그인 페이지로 이동
-        router.replace('/login');
-      } else {
-        setUsername(user.email);
-        setLoading(false);
-      }
-    };
-
-    fetchUser();
+    const storedUsername = localStorage.getItem('username');
+    if (storedUsername) {
+      setUsername(storedUsername);
+    }
   }, []);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut(); // Supabase의 로그아웃 함수 사용
+  const handleLogout = () => {
+    localStorage.removeItem('jwt_token');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('username');
+    localStorage.removeItem('userId'); // userId도 로그아웃 시 제거
     router.replace('/login');
   };
 
   const handleGoToSelection = () => {
     router.push('/select-4send'); // select-4send 페이지로 이동
   };
-
-  if (loading) {
-    return <div style={{ textAlign: 'center', marginTop: '50px', fontSize: '1.2em' }}>로딩 중...</div>;
-  }
 
   return (
     <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
@@ -71,6 +60,8 @@ export default function StudentPage() {
       >
         선택 페이지로 이동
       </button>
+
+      {/* 기타 학생 관련 기능 여기에 추가 */}
     </div>
   );
 }
