@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>학생 입력 페이지 1</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f0f2f5;
+      }
+      .container {
+        display: flex;
+        flex-direction: column;
+        width: 90%;
+        max-width: 500px;
+        padding: 20px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #333;
+        margin-bottom: 20px;
+      }
+      textarea {
+        width: 100%;
+        height: 150px;
+        padding: 10px;
+        margin-bottom: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 16px;
+        resize: vertical;
+        box-sizing: border-box;
+      }
+      button {
+        padding: 12px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 18px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      #status-message {
+        margin-top: 10px;
+        font-size: 14px;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>입력 페이지 1</h1>
+      <textarea id="message-input" placeholder="여기에 내용을 입력하세요"></textarea>
+      <button onclick="sendMessage()">보내기</button>
+      <div id="status-message"></div>
+    </div>
+
+    <script>
+      // 🚨 이 부분에 당신의 Supabase 정보를 넣어주세요.
+      const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+      const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+
+      const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+      async function sendMessage() {
+        const messageInput = document.getElementById('message-input');
+        const statusMessage = document.getElementById('status-message');
+        const content = messageInput.value;
+
+        if (content.trim() === '') {
+          statusMessage.textContent = '내용을 입력해주세요.';
+          statusMessage.style.color = 'red';
+          return;
+        }
+
+        statusMessage.textContent = '전송 중...';
+        statusMessage.style.color = 'gray';
+
+        const { error } = await supabase
+          .from('input_text_messages')
+          .insert({
+            content: content,
+            sender: '학생 1',
+          });
+
+        if (error) {
+          console.error('메시지 전송 실패:', error);
+          statusMessage.textContent = `전송에 실패했습니다: ${error.message}`;
+          statusMessage.style.color = 'red';
+        } else {
+          statusMessage.textContent = '✅ 성공적으로 전송되었습니다!';
+          statusMessage.style.color = 'green';
+          messageInput.value = '';
+        }
+      }
+    </script>
+  </body>
+</html>
