@@ -1,7 +1,7 @@
 // pages/login.js
 import { useState } from 'react';
 import { useRouter } from 'next/router';
-import { storage } from '../utils/storage'; // 새로운 storage 유틸리티 import
+import { supabase } from '../utils/supabaseClient';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -16,37 +16,37 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+      // Supabase 인증 시 email 필드 사용
+      const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: username,
+        password: password,
       });
 
-      let data = {};
-      try {
-        data = await response.json();
-      } catch (err) {
-        console.error('JSON 파싱 실패:', err);
-      }
+      if (signInError) throw signInError;
 
-      if (response.ok) {
-        // storage 유틸리티를 사용해서 인증 정보 저장
-        storage.setItem('jwt_token', data.token);
-        storage.setItem('userRole', data.userRole);
-        storage.setItem('username', data.username);
-        storage.setItem('userId', data.userId);
-        storage.setItem('isLoggedIn', 'true');
+      // 로그인 성공 후 유저 role 조회
+      const { data: userProfile, error: profileError } = await supabase
+        .from('users')
+        .select('role, username')
+        .eq('id', authData.user.id)
+        .single();
 
-        if (data.userRole === 'admin') router.push('/gwan-ri-ja');
-        else if (data.userRole === 'teacher') router.push('/teacher1');
-        else if (data.userRole === 'student') router.push('/student1');
-        else setError('알 수 없는 사용자 역할입니다.');
-      } else {
-        setError(data?.message || '로그인 실패');
-      }
+      if (profileError) throw profileError;
+
+      // 필요한 최소한의 데이터만 localStorage에 저장
+      localStorage.setItem('userRole', userProfile.role);
+      localStorage.setItem('username', userProfile.username);
+      localStorage.setItem('isLoggedIn', 'true');
+
+      // role에 따라 페이지 이동
+      if (userProfile.role === 'admin') router.push('/gwan-ri-ja');
+      else if (userProfile.role === 'teacher') router.push('/teacher');
+      else if (userProfile.role === 'student') router.push('/student');
+      else setError('알 수 없는 사용자 역할입니다.');
+
     } catch (err) {
-      setError('네트워크 또는 서버 오류');
-      console.error(err);
+      console.error('로그인 오류:', err);
+      setError(err.message || '아이디 또는 비밀번호가 잘못되었습니다.');
     } finally {
       setLoading(false);
     }

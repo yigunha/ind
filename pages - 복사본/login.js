@@ -1,7 +1,6 @@
 // pages/login.js
 import { useState } from 'react';
 import { useRouter } from 'next/router';
-import { storage } from '../utils/storage'; // 새로운 storage 유틸리티 import
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -30,16 +29,16 @@ export default function LoginPage() {
       }
 
       if (response.ok) {
-        // storage 유틸리티를 사용해서 인증 정보 저장
-        storage.setItem('jwt_token', data.token);
-        storage.setItem('userRole', data.userRole);
-        storage.setItem('username', data.username);
-        storage.setItem('userId', data.userId);
-        storage.setItem('isLoggedIn', 'true');
+        // localStorage에 인증 정보 저장
+        localStorage.setItem('jwt_token', data.token);
+        localStorage.setItem('userRole', data.userRole);
+        localStorage.setItem('username', data.username);
+        localStorage.setItem('userId', data.userId); // <<<<< 서버에서 받은 userId를 localStorage에 저장합니다!
+        localStorage.setItem('isLoggedIn', 'true');
 
         if (data.userRole === 'admin') router.push('/gwan-ri-ja');
-        else if (data.userRole === 'teacher') router.push('/teacher1');
-        else if (data.userRole === 'student') router.push('/student1');
+        else if (data.userRole === 'teacher') router.push('/teacher');
+        else if (data.userRole === 'student') router.push('/student');
         else setError('알 수 없는 사용자 역할입니다.');
       } else {
         setError(data?.message || '로그인 실패');
