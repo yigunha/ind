@@ -80,7 +80,7 @@ export default function LoginPage() {
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          min-height: 100vh;
+          min-height: 50vh;
           background-color: #f0f2f5;
           font-family: Arial, sans-serif;
         }
