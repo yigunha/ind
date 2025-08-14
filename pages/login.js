@@ -86,8 +86,8 @@ export default function LoginPage() {
         }
         h1 {
           color: #333;
-          margin-top: 30px;
-          margin-bottom: 30px;
+          margin-top: 0px;
+          margin-bottom: 0px;
 
         }
         form {
