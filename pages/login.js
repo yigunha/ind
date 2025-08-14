@@ -33,7 +33,7 @@ export default function LoginPage() {
         localStorage.setItem('jwt_token', data.token);
         localStorage.setItem('userRole', data.userRole);
         localStorage.setItem('username', data.username);
-        localStorage.setItem('userId', data.userId);
+        localStorage.setItem('userId', data.userId); // <<<<< 서버에서 받은 userId를 localStorage에 저장합니다!
         localStorage.setItem('isLoggedIn', 'true');
 
         if (data.userRole === 'admin') router.push('/gwan-ri-ja');
@@ -80,23 +80,22 @@ export default function LoginPage() {
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          min-height: 80vh; /* Changed from 100vh to 80vh to reduce top spacing */
+          min-height: 100vh;
           background-color: #f0f2f5;
           font-family: Arial, sans-serif;
         }
         h1 {
           color: #333;
-          font-size: 24px; /* Reduced font size */
-          margin-bottom: 20px; /* Reduced margin to decrease space */
+          margin-bottom: 30px;
         }
         form {
           background: white;
-          padding: 40px;
+          padding: 10px;
           border-radius: 8px;
           box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
           display: flex;
           flex-direction: column;
-          gap: 20px;
+          gap: 0px;
           width: 100%;
           max-width: 400px;
         }
