@@ -86,16 +86,18 @@ export default function LoginPage() {
         }
         h1 {
           color: #333;
+          margin-top: 30px;
           margin-bottom: 30px;
+
         }
         form {
           background: white;
-          padding: 10px;
+          padding: 40px;
           border-radius: 8px;
           box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
           display: flex;
           flex-direction: column;
-          gap: 0px;
+          gap: 20px;
           width: 100%;
           max-width: 400px;
         }
