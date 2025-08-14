@@ -79,16 +79,14 @@ export default function LoginPage() {
           display: flex;
           flex-direction: column;
           align-items: center;
-          justify-content: center;
+          justify-content: flex-start;
           min-height: 50vh;
           background-color: #f0f2f5;
           font-family: Arial, sans-serif;
         }
         h1 {
           color: #333;
-          margin-top: 0px;
-          margin-bottom: 0px;
-
+          margin-bottom: 10px;
         }
         form {
           background: white;
